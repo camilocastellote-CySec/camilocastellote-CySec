@@ -1,0 +1,72 @@
+# Zeek dns.log — Sanitized
+# Host: ACCOUNTING-PC-09 | Internal IP: 10.10.8.15
+# Window: 2024-04-02 09:43:00 UTC to 2024-04-02 11:02:00 UTC
+# Tool: Zeek 6.0 | Fields: ts, uid, id.orig_h, id.orig_p, id.resp_h, id.resp_p, proto, query, qtype_name, rcode_name, answers
+#
+# NOTE: All subdomains are algorithmically generated (DGA).
+#       Interval between queries is consistently ~6 seconds.
+#       Nearly all responses are NXDOMAIN — no valid resolution.
+# -----------------------------------------------------------------------
+
+ts                   uid            id.orig_h    id.orig_p  id.resp_h    id.resp_p  proto  query                              qtype_name  rcode_name  answers
+1712047380.112       CGa1x3abc001   10.10.8.15   54821      10.10.0.1    53         udp    a7f3k2.updates-cdn77.com           A           NXDOMAIN    -
+1712047386.118       CGa1x3abc002   10.10.8.15   54822      10.10.0.1    53         udp    bx92mq.updates-cdn77.com           A           NXDOMAIN    -
+1712047392.121       CGa1x3abc003   10.10.8.15   54823      10.10.0.1    53         udp    zt18rp.updates-cdn77.com           A           NXDOMAIN    -
+1712047398.119       CGa1x3abc004   10.10.8.15   54824      10.10.0.1    53         udp    kd03yw.updates-cdn77.com           A           NXDOMAIN    -
+1712047404.122       CGa1x3abc005   10.10.8.15   54825      10.10.0.1    53         udp    nv55xj.updates-cdn77.com           A           NXDOMAIN    -
+1712047410.117       CGa1x3abc006   10.10.8.15   54826      10.10.0.1    53         udp    qp77lc.updates-cdn77.com           A           NXDOMAIN    -
+1712047416.120       CGa1x3abc007   10.10.8.15   54827      10.10.0.1    53         udp    mr44th.updates-cdn77.com           A           NXDOMAIN    -
+1712047422.115       CGa1x3abc008   10.10.8.15   54828      10.10.0.1    53         udp    ws01bv.updates-cdn77.com           A           NXDOMAIN    -
+1712047428.119       CGa1x3abc009   10.10.8.15   54829      10.10.0.1    53         udp    hj72qn.updates-cdn77.com           A           NXDOMAIN    -
+1712047434.121       CGa1x3abc010   10.10.8.15   54830      10.10.0.1    53         udp    lp09xz.updates-cdn77.com           A           NXDOMAIN    -
+1712047440.118       CGa1x3abc011   10.10.8.15   54831      10.10.0.1    53         udp    fy83ms.updates-cdn77.com           A           NXDOMAIN    -
+1712047446.122       CGa1x3abc012   10.10.8.15   54832      10.10.0.1    53         udp    dx44wk.updates-cdn77.com           A           NXDOMAIN    -
+1712047452.116       CGa1x3abc013   10.10.8.15   54833      10.10.0.1    53         udp    gu91cv.updates-cdn77.com           A           NXDOMAIN    -
+1712047458.120       CGa1x3abc014   10.10.8.15   54834      10.10.0.1    53         udp    ek56pb.updates-cdn77.com           A           NXDOMAIN    -
+1712047464.117       CGa1x3abc015   10.10.8.15   54835      10.10.0.1    53         udp    tn28rj.updates-cdn77.com           A           NXDOMAIN    -
+
+# --- TXT RECORD QUERIES (data exfiltration via Base64 encoding) ---
+# Decoded values shown in comments
+
+1712047470.119       CGa1x3abc016   10.10.8.15   54836      10.10.0.1    53         udp    cmQgL2V0Yy9wYXNzd3Jk.updates-cdn77.com    TXT   NXDOMAIN    -
+# Decoded: "rd /etc/passwd"
+
+1712047476.122       CGa1x3abc017   10.10.8.15   54837      10.10.0.1    53         udp    aG9zdG5hbWU=.updates-cdn77.com             TXT   NXDOMAIN    -
+# Decoded: "hostname"
+
+1712047482.118       CGa1x3abc018   10.10.8.15   54838      10.10.0.1    53         udp    aXBjb25maWc=.updates-cdn77.com             TXT   NXDOMAIN    -
+# Decoded: "ipconfig"
+
+1712047488.121       CGa1x3abc019   10.10.8.15   54839      10.10.0.1    53         udp    QUNDVFAtMDk=.updates-cdn77.com             TXT   NXDOMAIN    -
+# Decoded: "ACCTP-09"  (hostname confirmation)
+
+1712047494.116       CGa1x3abc020   10.10.8.15   54840      10.10.0.1    53         udp    d2hvYW1p.updates-cdn77.com                 TXT   NXDOMAIN    -
+# Decoded: "whoami"
+
+# --- Continued A-record beaconing ---
+1712047500.119       CGa1x3abc021   10.10.8.15   54841      10.10.0.1    53         udp    vb37kp.updates-cdn77.com           A           NXDOMAIN    -
+1712047506.122       CGa1x3abc022   10.10.8.15   54842      10.10.0.1    53         udp    oz19wn.updates-cdn77.com           A           NXDOMAIN    -
+1712047512.117       CGa1x3abc023   10.10.8.15   54843      10.10.0.1    53         udp    ct82jm.updates-cdn77.com           A           NXDOMAIN    -
+1712047518.120       CGa1x3abc024   10.10.8.15   54844      10.10.0.1    53         udp    yq55xd.updates-cdn77.com           A           NXDOMAIN    -
+1712047524.115       CGa1x3abc025   10.10.8.15   54845      10.10.0.1    53         udp    rb04nf.updates-cdn77.com           A           NXDOMAIN    -
+1712047530.119       CGa1x3abc026   10.10.8.15   54846      10.10.0.1    53         udp    ij76ql.updates-cdn77.com           A           NXDOMAIN    -
+1712047536.121       CGa1x3abc027   10.10.8.15   54847      10.10.0.1    53         udp    wm43bz.updates-cdn77.com           A           NXDOMAIN    -
+1712047542.118       CGa1x3abc028   10.10.8.15   54848      10.10.0.1    53         udp    sk90hv.updates-cdn77.com           A           NXDOMAIN    -
+1712047548.122       CGa1x3abc029   10.10.8.15   54849      10.10.0.1    53         udp    pf27ex.updates-cdn77.com           A           NXDOMAIN    -
+1712047554.116       CGa1x3abc030   10.10.8.15   54850      10.10.0.1    53         udp    ne61yw.updates-cdn77.com           A           NXDOMAIN    -
+
+# [... 817 additional queries follow the same pattern until 11:02:00 UTC ...]
+# Total queries logged: 847
+# Unique subdomains:    312 (no repeats — DGA confirmed)
+# NXDOMAIN responses:  829 (97.9%)
+# TXT queries:         18  (2.1%) — used for exfiltration
+# Average interval:    6.001 seconds
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - Subdomain entropy avg: 2.58 bits (consistent with algorithmic generation)
+# - No legitimate CDN or update service uses this query pattern
+# - Query volume (847/hr vs baseline ~30/hr) = 28x spike
+# - Parent domain registered 4 days prior to attack (2024-03-29)
+# - Linked to DNScat2 C2 infrastructure via OTX Pulses
+# -----------------------------------------------------------------------
