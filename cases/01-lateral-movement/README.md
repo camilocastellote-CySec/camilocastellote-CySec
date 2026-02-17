@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 📋 Case Summary
 
 | Field | Details |
