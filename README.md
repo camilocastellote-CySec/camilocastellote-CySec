@@ -1,16 +1,76 @@
-## Hi there 👋
+# 🔐 SOC Analyst Portfolio
 
-<!--
-**camilocastellote-CySec/camilocastellote-CySec** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+> Documenting hands-on SOC investigations based on realistic attack scenarios
+> using Windows, Linux, network traffic, web logs, SIEM data, and threat intelligence.
 
-Here are some ideas to get you started:
+---
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## 🛠️ Tools Used
+
+### SIEM
+![Splunk](https://img.shields.io/badge/Splunk-000000?style=for-the-badge&logo=splunk&logoColor=white)
+![Elastic](https://img.shields.io/badge/Elastic-005571?style=for-the-badge&logo=elastic&logoColor=white)
+
+### Network Analysis
+![Wireshark](https://img.shields.io/badge/Wireshark-1679A7?style=for-the-badge&logo=wireshark&logoColor=white)
+![Zeek](https://img.shields.io/badge/Zeek-777BB4?style=for-the-badge&logo=zeek&logoColor=white)
+
+### Endpoint & Logs
+![Windows](https://img.shields.io/badge/Windows_Event_Logs-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux_Auth_Logs-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Sysmon](https://img.shields.io/badge/Sysmon-0078D4?style=for-the-badge&logo=microsoft&logoColor=white)
+
+### Threat Intelligence
+![VirusTotal](https://img.shields.io/badge/VirusTotal-394EFF?style=for-the-badge&logo=virustotal&logoColor=white)
+![AbuseIPDB](https://img.shields.io/badge/AbuseIPDB-CC0000?style=for-the-badge&logo=abuseipdb&logoColor=white)
+![OTX](https://img.shields.io/badge/AlienVault_OTX-4A90D9?style=for-the-badge&logoColor=white)
+
+---
+
+## 📜 Certificates
+
+![TryHackMe SAL1](https://img.shields.io/badge/TryHackMe-SOC_Level_1_Analyst-212C42?style=for-the-badge&logo=tryhackme&logoColor=white)
+![Google Coursera](https://img.shields.io/badge/Coursera-Bits_and_Bytes_of_Computer_Networking-0056D2?style=for-the-badge&logo=coursera&logoColor=white)
+![Google Coursera](https://img.shields.io/badge/Coursera-Technical_Support_Fundamentals-0056D2?style=for-the-badge&logo=coursera&logoColor=white)
+
+---
+
+## 💡 Skills Demonstrated
+
+| Category | Skills |
+|---|---|
+| **Detection** | Alert triage, log correlation, anomaly detection |
+| **Analysis** | Windows/Linux/Web log analysis, PCAP review |
+| **SIEM** | Splunk SPL queries, Elastic KQL filtering |
+| **Threat Intel** | IOC enrichment, malware triage, pivot analysis |
+| **Documentation** | Incident reports, escalation write-ups |
+
+---
+
+## 🔍 Investigation Methodology
+```
+[Alert Triggered]
+      ↓
+  Auth Logs → Validate identity anomalies
+      ↓
+  Process Logs → Suspicious executions / parent-child chains
+      ↓
+  Network Logs → C2 beaconing, exfil, lateral movement
+      ↓
+  Persistence Checks → Registry, scheduled tasks, startup
+      ↓
+  Timeline → Chronological reconstruction of events
+      ↓
+  [Incident Report / Escalation]
+```
+
+---
+
+## 📁 Projects
+
+| # | Case | Type | Tools | Write-up |
+|---|---|---|---|---|
+| 01 | Suspicious Login & Lateral Movement | IR | Splunk, Sysmon | [View →](./cases/01-lateral-movement/) |
+| 02 | Malware Beaconing via DNS | Malware | Wireshark, Zeek | [View →](./cases/02-dns-beaconing/) |
+| 03 | Web Shell Detection | Web | Elastic, Auth logs | [View →](./cases/03-webshell/) |
+
