@@ -1,0 +1,30 @@
+# IOCs — Case 02: DNS Beaconing
+
+## IP Addresses
+94.102.49.190   # Hosting IP for updates-cdn77.com (Netherlands)
+203.0.113.88    # [placeholder — see case 03]
+
+## Domains
+updates-cdn77.com  # C2 domain — DNS tunneling / beaconing (DGA subdomains)
+
+## File Hashes
+# svcupdate.exe (DNScat2 client / DNS RAT)
+MD5:    c1d2e3f4a5b6789012abcdef34567890
+SHA256: cafebabe1234567890abcdef1234567890abcdef1234567890abcdef9876fedc
+
+# Q1_Invoices_Final.docm (Macro dropper)
+MD5:    ff00ee11dd22cc33bb44aa5566778899
+
+## File Names
+svcupdate.exe           # Dropped to AppData\Roaming\Microsoft\Windows\
+Q1_Invoices_Final.docm  # Phishing attachment / initial dropper
+
+## Beacon Characteristics
+Parent domain:  updates-cdn77.com
+Subdomain:      6-char random alphanumeric (DGA)
+Interval:       6 seconds (±0.01s)
+Protocol:       DNS A + TXT queries
+Encoding:       Base64 in subdomain labels
+
+## Network Indicators
+94.102.49.190:80  # C2 HTTP (DNS responses)
