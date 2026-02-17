@@ -1,0 +1,121 @@
+# tshark PCAP Analysis — Sanitized
+# Host: ACCOUNTING-PC-09 | Internal IP: 10.10.8.15
+# Capture window: 2024-04-02 09:43:00 to 2024-04-02 11:02:00 UTC
+# Command: tshark -r capture.pcap -Y "dns && dns.qry.name contains updates-cdn77.com"
+#          -T fields -e frame.time -e ip.src -e ip.dst -e dns.qry.name
+#          -e dns.qry.type -e dns.resp.name -e frame.len -e dns.a
+# -----------------------------------------------------------------------
+
+# === SECTION 1: RAW PACKET OUTPUT (first 30 packets) ===
+
+FRAME   TIME (UTC)                    SRC IP        DST IP       DNS QUERY                                  TYPE   LEN   ANSWER
+------  ----------------------------  ------------  -----------  -----------------------------------------  -----  ----  -------
+1       Apr  2, 2024 09:43:17.112     10.10.8.15    10.10.0.1    a7f3k2.updates-cdn77.com                   A      72    -
+2       Apr  2, 2024 09:43:23.118     10.10.8.15    10.10.0.1    bx92mq.updates-cdn77.com                   A      72    -
+3       Apr  2, 2024 09:43:29.121     10.10.8.15    10.10.0.1    zt18rp.updates-cdn77.com                   A      72    -
+4       Apr  2, 2024 09:43:35.119     10.10.8.15    10.10.0.1    kd03yw.updates-cdn77.com                   A      72    -
+5       Apr  2, 2024 09:43:41.122     10.10.8.15    10.10.0.1    nv55xj.updates-cdn77.com                   A      72    -
+6       Apr  2, 2024 09:43:47.117     10.10.8.15    10.10.0.1    qp77lc.updates-cdn77.com                   A      72    -
+7       Apr  2, 2024 09:43:53.120     10.10.8.15    10.10.0.1    mr44th.updates-cdn77.com                   A      72    -
+8       Apr  2, 2024 09:43:59.115     10.10.8.15    10.10.0.1    ws01bv.updates-cdn77.com                   A      72    -
+9       Apr  2, 2024 09:44:05.119     10.10.8.15    10.10.0.1    hj72qn.updates-cdn77.com                   A      72    -
+10      Apr  2, 2024 09:44:11.121     10.10.8.15    10.10.0.1    lp09xz.updates-cdn77.com                   A      71    -
+11      Apr  2, 2024 09:44:17.118     10.10.8.15    10.10.0.1    fy83ms.updates-cdn77.com                   A      72    -
+12      Apr  2, 2024 09:44:23.122     10.10.8.15    10.10.0.1    dx44wk.updates-cdn77.com                   A      72    -
+13      Apr  2, 2024 09:44:29.116     10.10.8.15    10.10.0.1    gu91cv.updates-cdn77.com                   A      72    -
+14      Apr  2, 2024 09:44:35.120     10.10.8.15    10.10.0.1    ek56pb.updates-cdn77.com                   A      72    -
+15      Apr  2, 2024 09:44:41.117     10.10.8.15    10.10.0.1    tn28rj.updates-cdn77.com                   A      72    -
+
+# --- TXT RECORD PACKETS (exfiltration) ---
+
+16      Apr  2, 2024 09:44:47.119     10.10.8.15    10.10.0.1    cmQgL2V0Yy9wYXNzd3Jk.updates-cdn77.com    TXT    96    -
+17      Apr  2, 2024 09:44:53.122     10.10.8.15    10.10.0.1    aG9zdG5hbWU=.updates-cdn77.com             TXT    88    -
+18      Apr  2, 2024 09:44:59.118     10.10.8.15    10.10.0.1    aXBjb25maWc=.updates-cdn77.com             TXT    88    -
+19      Apr  2, 2024 09:45:05.121     10.10.8.15    10.10.0.1    QUNDVFAtMDk=.updates-cdn77.com             TXT    88    -
+20      Apr  2, 2024 09:45:11.116     10.10.8.15    10.10.0.1    d2hvYW1p.updates-cdn77.com                 TXT    84    -
+
+# --- Resumed A-record beaconing ---
+
+21      Apr  2, 2024 09:45:17.120     10.10.8.15    10.10.0.1    vb37kp.updates-cdn77.com                   A      72    -
+22      Apr  2, 2024 09:45:23.115     10.10.8.15    10.10.0.1    oz19wn.updates-cdn77.com                   A      72    -
+23      Apr  2, 2024 09:45:29.119     10.10.8.15    10.10.0.1    ct82jm.updates-cdn77.com                   A      72    -
+24      Apr  2, 2024 09:45:35.121     10.10.8.15    10.10.0.1    yq55xd.updates-cdn77.com                   A      71    -
+25      Apr  2, 2024 09:45:41.117     10.10.8.15    10.10.0.1    rb04nf.updates-cdn77.com                   A      72    -
+26      Apr  2, 2024 09:45:47.120     10.10.8.15    10.10.0.1    ij76ql.updates-cdn77.com                   A      72    -
+27      Apr  2, 2024 09:45:53.116     10.10.8.15    10.10.0.1    wm43bz.updates-cdn77.com                   A      72    -
+28      Apr  2, 2024 09:45:59.122     10.10.8.15    10.10.0.1    sk90hv.updates-cdn77.com                   A      72    -
+29      Apr  2, 2024 09:46:05.118     10.10.8.15    10.10.0.1    pf27ex.updates-cdn77.com                   A      72    -
+30      Apr  2, 2024 09:46:11.121     10.10.8.15    10.10.0.1    ne61yw.updates-cdn77.com                   A      72    -
+
+# [... 817 additional packets truncated ...]
+
+
+# === SECTION 2: INTERVAL ANALYSIS ===
+# Command: extracted timestamps → awk interval calculation
+
+INTERVAL (seconds)   COUNT   PERCENTAGE
+-------------------  ------  ----------
+5.99                 187     22.1%
+6.00                 401     47.3%
+6.01                 198     23.4%
+6.02                 55       6.5%
+Other                6        0.7%
+-------------------  ------  ----------
+TOTAL                847     100%
+
+# Conclusion: 93% of all packets arrive within ±0.01s of exactly 6 seconds.
+# This is machine-generated beaconing — not human or browser activity.
+
+
+# === SECTION 3: PACKET SIZE COMPARISON ===
+
+QUERY TYPE     AVG PACKET SIZE   NORMAL DNS RANGE   STATUS
+-----------    ---------------   ----------------   ----------------------------
+A records      72 bytes          40-60 bytes        ABOVE NORMAL (long subdomains)
+TXT records    88-96 bytes       50-80 bytes        ABOVE NORMAL (Base64 payload)
+Responses      All NXDOMAIN      Mix of IPs/NX      SUSPICIOUS — no valid answers
+
+
+# === SECTION 4: BASE64 DECODED EXFILTRATION CONTENT ===
+# Extracted from TXT query subdomains
+
+RAW SUBDOMAIN (Base64)              DECODED VALUE           CATEGORY
+----------------------------------  ----------------------  ------------------
+cmQgL2V0Yy9wYXNzd3Jk                rd /etc/passwd          File read command
+aG9zdG5hbWU=                        hostname                Recon command
+aXBjb25maWc=                        ipconfig                Recon command
+QUNDVFAtMDk=                        ACCTP-09                Hostname value
+d2hvYW1p                            whoami                  Recon command
+dXNlcm5hbWU=                        username                Recon command
+cGF0cmljaTtA                        patrici@                Partial username
+c3lzdGVtaW5mbw==                    systeminfo              Recon command
+bmV0IHVzZXI=                        net user                Recon command
+bmV0IHN0YXQ=                        net stat                Recon command
+
+
+# === SECTION 5: TRAFFIC SUMMARY ===
+
+Metric                          Value
+------------------------------  ----------------------
+Total DNS packets captured      847
+Unique subdomains               312
+Repeated subdomains             0  (no reuse — DGA)
+A record queries                829
+TXT record queries              18
+NXDOMAIN responses              829  (97.9%)
+NOERROR responses               0
+Avg query interval              6.001 seconds
+Total bytes in subdomains       ~24,822 bytes (~24 KB)
+Capture start                   2024-04-02 09:43:17 UTC
+Capture end (host isolated)     2024-04-02 11:02:00 UTC
+Total capture duration          78 minutes 43 seconds
+
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - DNS tunneling confirmed via Base64 encoded data in subdomain labels
+# - Consistent 6s beacon interval = hardcoded sleep timer in malware
+# - Zero valid A record responses = C2 domain uses DNS for signaling only
+# - TXT queries carry encoded recon output back to attacker
+# - Packet sizes larger than legitimate DNS due to encoded payloads
+# -----------------------------------------------------------------------
