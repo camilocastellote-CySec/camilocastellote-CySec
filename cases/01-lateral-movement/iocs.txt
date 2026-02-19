@@ -1,0 +1,116 @@
+# IOCs — Case 01: Suspicious Login & Lateral Movement
+# Case ID: SOC-2024-001
+# Date: 2024-03-14
+# Analyst: [Your Name]
+# -----------------------------------------------------------------------
+
+
+# === IP ADDRESSES ===
+
+185.220.101.47
+  Type:        IPv4 — Attacker C2 / brute force source
+  ISP:         DigitalOcean Netherlands (Tor exit node)
+  AbuseIPDB:   98/100 (highly malicious)
+  OTX Pulses:  Linked to Cobalt Strike C2 campaigns
+  First Seen:  2024-01-05
+  Ports Used:  445 (inbound SMB brute force)
+               8080 (C2 HTTP file server — payload delivery)
+               4444 (reverse shell / Cobalt Strike listener)
+
+
+# === FILE HASHES ===
+
+# svchost32.exe — Cobalt Strike Beacon
+  MD5:         a3f1c2d4e5b6789012345678abcdef01
+  SHA256:      deadbeef1234567890abcdef1234567890abcdef1234567890abcdef9876543210
+  File Size:   428 KB
+  Compile Time: 2024-03-13 (one day before attack)
+  Packer:      None detected
+  VirusTotal:  54/72 engines flagged
+  Family:      Cobalt Strike Beacon (CobaltStrike.Beacon.4)
+  Dropped To:  \\FILESERVER-01\C$\Windows\Temp\svchost32.exe
+
+# payload.exe — Initial dropper (downloaded to WORKSTATION-04)
+  MD5:         b4c5d6e7f8a9012345678901bcdef234
+  SHA256:      c0ffee1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab
+  File Size:   428 KB
+  Note:        Same binary as svchost32.exe — renamed during lateral movement
+  Dropped To:  C:\Users\jsmith\AppData\Local\Temp\payload.exe
+
+
+# === FILE PATHS ===
+
+C:\Users\jsmith\AppData\Local\Temp\payload.exe
+  Description: Initial payload downloaded from C2 to WORKSTATION-04
+  Created:     2024-03-14 02:19:14 UTC
+
+C:\Windows\Temp\svchost32.exe
+  Description: Payload copied to FILESERVER-01 disguised as Windows service
+  Created:     2024-03-14 02:21:55 UTC
+  Note:        Legitimate svchost.exe only lives in C:\Windows\System32\
+
+
+# === REGISTRY KEYS ===
+
+HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\WindowsUpdateHelper
+  Host:   FILESERVER-01
+  Value:  C:\Windows\Temp\svchost32.exe
+  Set By: svchost32.exe (PID 2841)
+  Time:   2024-03-14 02:24:17 UTC
+  Note:   Persistence mechanism — survives reboot
+
+
+# === NETWORK INDICATORS ===
+
+185.220.101.47:445   Inbound SMB brute force source
+185.220.101.47:8080  C2 HTTP file server (payload.exe delivery)
+185.220.101.47:4444  Cobalt Strike listener / reverse shell
+
+# Internal lateral movement
+10.10.5.44  → 10.10.2.30:445  SMB copy (WORKSTATION-04 → FILESERVER-01)
+
+
+# === USER ACCOUNTS ===
+
+CORP\jsmith
+  Status:      Compromised — credentials obtained via brute force
+  Action Taken: Disabled pending password reset + MFA enrollment
+  Normal Login: 10.10.5.22, Logon Type 2, business hours
+  Attack Login: 185.220.101.47, Logon Type 3, 02:17 UTC
+
+
+# === WINDOWS EVENT IDS OF INTEREST ===
+
+4625  Failed logon (Sub Status 0xC000006A = wrong password / valid user)
+4624  Successful logon (Logon Type 3 from external IP)
+4648  Explicit credential use (lateral movement indicator)
+4768  Kerberos TGT request (check for jsmith after compromise)
+7045  New service installed (if attacker registered svchost32 as service)
+
+
+# === DETECTION RULES (SPL) ===
+
+# Alert on Logon Type 3 from non-RFC1918 source
+index=windows sourcetype=WinEventLog:Security EventCode=4624
+Logon_Type=3 NOT (src_ip="10.*" OR src_ip="172.16.*" OR src_ip="192.168.*")
+| table _time, user, src_ip, host
+
+# Alert on encoded PowerShell from standard users
+index=sysmon EventCode=1
+CommandLine="*-EncodedCommand*" NOT (User="*admin*" OR User="SYSTEM")
+| table _time, user, host, CommandLine
+
+# Alert on net.exe mapping admin shares
+index=sysmon EventCode=1 Image="*\\net.exe"
+CommandLine="*\\C$*" OR CommandLine="*\\ADMIN$*"
+| table _time, user, host, CommandLine
+
+
+# === MITRE ATT&CK REFERENCES ===
+
+T1078    Valid Accounts                    (brute force + credential reuse)
+T1059.001  PowerShell                      (encoded payload dropper)
+T1021.002  SMB/Windows Admin Shares        (lateral movement via C$)
+T1547.001  Registry Run Keys               (persistence via CurrentVersion\Run)
+T1571    Non-Standard Port                 (C2 on 8080 and 4444)
+T1486    Not applicable
