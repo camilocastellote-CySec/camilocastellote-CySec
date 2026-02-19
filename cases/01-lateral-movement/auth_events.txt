@@ -1,0 +1,269 @@
+# ===================================================================
+# SECTION 2: BRUTE FORCE SEQUENCE (EventID 4625 — Failed Logons)
+# ===================================================================
+
+# --- Attempt 1 — trying 'administrator' ---
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:13:51 UTC
+Event ID:      4625
+Task Category: Logon
+Keywords:      Audit Failure
+Computer:      WORKSTATION-04
+
+An account failed to log on.
+
+Subject:
+  Security ID:   NULL SID
+  Account Name:  -
+  Logon ID:      0x0
+
+Logon Type:    3          <- Network logon
+
+Account For Which Logon Failed:
+  Security ID:   NULL SID
+  Account Name:  administrator
+  Account Domain: WORKSTATION-04
+
+Failure Information:
+  Failure Reason:      Unknown username or bad password
+  Status:              0xC000006D
+  Sub Status:          0xC0000064  <- Username does not exist
+
+Network Information:
+  Workstation Name: -
+  Source IP:        185.220.101.47   <- ⚠️ External IP — Tor exit node
+  Source Port:      51204
+
+# --- Attempt 2 — trying 'admin' ---
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:14:02 UTC
+Event ID:      4625
+Task Category: Logon
+Keywords:      Audit Failure
+Computer:      WORKSTATION-04
+
+Account For Which Logon Failed:
+  Account Name:  admin
+  Account Domain: WORKSTATION-04
+
+Failure Information:
+  Failure Reason:      Unknown username or bad password
+  Status:              0xC000006D
+  Sub Status:          0xC0000064  <- Username does not exist
+
+Network Information:
+  Source IP:    185.220.101.47
+  Source Port:  51205
+
+# --- Attempts 3–23 — targeting 'jsmith' (wrong password) ---
+# Repeated 21 times between 02:14:17 and 02:17:41 UTC
+# Showing first and last of the sequence:
+
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:14:17 UTC
+Event ID:      4625
+Task Category: Logon
+Keywords:      Audit Failure
+Computer:      WORKSTATION-04
+
+Account For Which Logon Failed:
+  Account Name:  jsmith
+  Account Domain: CORP
+
+Failure Information:
+  Failure Reason:      Unknown username or bad password
+  Status:              0xC000006D
+  Sub Status:          0xC000006A  <- Wrong password (user EXISTS)
+  # ⚠️ Sub Status changed — attacker confirmed valid username
+
+Network Information:
+  Source IP:    185.220.101.47
+  Source Port:  51206
+
+# [... 19 additional EventID 4625 entries for jsmith — 02:14:25 to 02:17:39 ...]
+# All identical: Sub Status 0xC000006A (wrong password), same source IP
+
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:17:41 UTC
+Event ID:      4625
+Task Category: Logon
+Keywords:      Audit Failure
+Computer:      WORKSTATION-04
+
+Account For Which Logon Failed:
+  Account Name:  jsmith
+  Account Domain: CORP
+
+Failure Information:
+  Failure Reason:      Unknown username or bad password
+  Status:              0xC000006D
+  Sub Status:          0xC000006A
+
+Network Information:
+  Source IP:    185.220.101.47
+  Source Port:  51227
+# Last failed attempt before successful login
+
+
+# ===================================================================
+# SECTION 3: SUCCESSFUL LOGON (EventID 4624)
+# ===================================================================
+
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:17:43 UTC
+Event ID:      4624
+Task Category: Logon
+Keywords:      Audit Success
+Computer:      WORKSTATION-04
+
+An account was successfully logged on.
+
+Subject:
+  Security ID:   SYSTEM
+  Account Name:  WORKSTATION-04$
+  Logon ID:      0x3E7
+
+Logon Information:
+  Logon Type:    3           <- ⚠️ Network logon (not interactive desktop)
+  Logon GUID:    {A4F3B2C1-D5E6-7890-ABCD-EF1234567890}
+
+New Logon:
+  Security ID:   CORP\jsmith
+  Account Name:  jsmith
+  Account Domain: CORP
+  Logon ID:      0x9F3A41
+  Linked Logon ID: 0x0
+
+Network Information:
+  Workstation Name: -
+  Source IP:        185.220.101.47   <- ⚠️ EXTERNAL IP — anomalous
+  Source Port:      51228
+
+# ⚠️ ANOMALIES vs baseline:
+#    - Logon Type 3 (network) vs normal Type 2 (interactive)
+#    - Source IP 185.220.101.47 (external) vs normal 10.10.5.22 (internal)
+#    - Time 02:17 UTC (off-hours) vs normal 08:00-17:00 UTC
+
+
+# ===================================================================
+# SECTION 4: EXPLICIT CREDENTIAL USE (EventID 4648 — Lateral Movement)
+# ===================================================================
+
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:21:33 UTC
+Event ID:      4648
+Task Category: Logon
+Keywords:      Audit Success
+Computer:      WORKSTATION-04
+
+A logon was attempted using explicit credentials.
+
+Subject:
+  Security ID:   CORP\jsmith
+  Account Name:  jsmith
+  Logon ID:      0x9F3A41
+  Logon GUID:    {A4F3B2C1-D5E6-7890-ABCD-EF1234567890}
+
+Account Whose Credentials Were Used:
+  Account Name:  jsmith
+  Account Domain: CORP
+  Logon GUID:    {B5G4C3D2-E6F7-8901-BCDE-F23456789012}
+
+Target Server:
+  Target Server Name: FILESERVER-01     <- ⚠️ SMB lateral movement target
+  Additional Information: FILESERVER-01
+
+Process Information:
+  Process ID:   0x1A3C
+  Process Name: C:\Windows\System32\cmd.exe
+
+Network Information:
+  Network Address: 10.10.2.30    <- FILESERVER-01 internal IP
+  Port:            445           <- ⚠️ SMB port
+
+
+# ===================================================================
+# SECTION 5: SUCCESSFUL LOGON TO FILESERVER-01 (EventID 4624)
+# ===================================================================
+
+Log Name:      Security
+Source:        Microsoft-Windows-Security-Auditing
+Date:          2024-03-14 02:21:34 UTC
+Event ID:      4624
+Task Category: Logon
+Keywords:      Audit Success
+Computer:      FILESERVER-01    <- ⚠️ Second host now compromised
+
+An account was successfully logged on.
+
+Logon Information:
+  Logon Type:    3          <- Network logon via SMB
+
+New Logon:
+  Security ID:   CORP\jsmith
+  Account Name:  jsmith
+  Account Domain: CORP
+  Logon ID:      0x7B2D19
+
+Network Information:
+  Workstation Name: WORKSTATION-04
+  Source IP:        10.10.5.44     <- WORKSTATION-04 internal IP
+  Source Port:      49821
+
+# ⚠️ jsmith successfully authenticated to FILESERVER-01 from WORKSTATION-04
+#    This confirms lateral movement via SMB using stolen/brute-forced credentials
+
+
+# ===================================================================
+# SECTION 6: BRUTE FORCE SUMMARY TABLE
+# ===================================================================
+
+Time (UTC)       EventID  Account        Sub Status  Source IP         Note
+---------------  -------  -------------  ----------  ----------------  ---------------------------
+02:13:51         4625     administrator  0xC0000064  185.220.101.47    User does not exist
+02:14:02         4625     admin          0xC0000064  185.220.101.47    User does not exist
+02:14:17         4625     jsmith         0xC000006A  185.220.101.47    Wrong password (user found)
+02:14:25         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:14:33         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:14:41         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:14:49         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:14:57         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:05         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:13         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:21         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:29         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:37         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:45         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:15:53         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:01         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:09         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:17         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:25         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:33         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:41         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:16:49         4625     jsmith         0xC000006A  185.220.101.47    Wrong password
+02:17:41         4625     jsmith         0xC000006A  185.220.101.47    Last failed attempt
+02:17:43         4624     jsmith         SUCCESS     185.220.101.47    ⚠️ LOGON SUCCESS
+02:21:33         4648     jsmith         SUCCESS     185.220.101.47    ⚠️ Explicit creds — SMB
+02:21:34         4624     jsmith         SUCCESS     10.10.5.44        ⚠️ Lateral move confirmed
+
+Total 4625 (failures): 23
+Total 4624 (success):   2  (WORKSTATION-04 + FILESERVER-01)
+Attack duration:        3 minutes 52 seconds
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - Sub Status 0xC0000064 = user does not exist (enumeration phase)
+# - Sub Status 0xC000006A = wrong password (username confirmed valid)
+# - Sub Status change at 02:14:17 tells attacker — and analyst — jsmith exists
+# - Logon Type 3 from external IP is always suspicious on a workstation
+# - EventID 4648 is the clearest indicator of lateral movement intent
+# - Recommend: Account lockout policy after 5 failed attempts
+# - Recommend: Alert on EventID 4624 Logon Type 3 from non-RFC1918 source IPs
+# -----------------------------------------------------------------------
