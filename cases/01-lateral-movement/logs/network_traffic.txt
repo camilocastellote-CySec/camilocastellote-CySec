@@ -1,0 +1,175 @@
+# Network Traffic Log — Sanitized
+# Host: WORKSTATION-04 + FILESERVER-01
+# Sources: Firewall logs + Zeek conn.log + Sysmon EventID 3 (Network Connection)
+# Window: 2024-03-14 02:13:51 UTC to 2024-03-14 02:30:00 UTC
+# -----------------------------------------------------------------------
+# NOTE: Internal IPs anonymized to RFC 1918 ranges.
+#       External IPs preserved — critical for IOC documentation.
+#       Bytes values are approximate.
+# -----------------------------------------------------------------------
+
+
+# ===================================================================
+# SECTION 1: ZEEK conn.log (full session view)
+# ===================================================================
+# Fields: ts, uid, id.orig_h, id.orig_p, id.resp_h, id.resp_p, proto,
+#         service, duration, orig_bytes, resp_bytes, conn_state, history
+# -----------------------------------------------------------------------
+
+# --- Brute force SMB connections (pre-login) ---
+ts                   uid            orig_h           orig_p  resp_h       resp_p  proto  service  duration  orig_bytes  resp_bytes  conn_state  history
+1710378831.112       Ca1B2c3D4e5F   185.220.101.47   51204   10.10.5.44   445     tcp    smb      0.041     1248        512         SF          ShADadFf
+1710378842.331       Ca1B2c3D4e5G   185.220.101.47   51205   10.10.5.44   445     tcp    smb      0.039     1248        512         SF          ShADadFf
+1710378857.119       Ca1B2c3D4e5H   185.220.101.47   51206   10.10.5.44   445     tcp    smb      0.042     1248        512         SF          ShADadFf
+# [... 20 additional failed SMB sessions 02:14:25 to 02:17:41 — identical pattern ...]
+# All show conn_state SF (normal finish) but resp_bytes=512 (error response only)
+
+# --- Successful SMB authentication ---
+1710379063.441       Ca1B2c3D4e6A   185.220.101.47   51228   10.10.5.44   445     tcp    smb      487.221   18432       92160       SF          ShADadFf
+# ⚠️ Much larger resp_bytes (92KB) — actual session data being transferred
+# ⚠️ Duration 487s = active session, not just auth probe
+
+# --- Payload download from C2 (PowerShell Invoke-WebRequest) ---
+1710379150.882       Cb2C3d4E5f6B   10.10.5.44       49312   185.220.101.47   8080   tcp    http   2.441     412         438272      SF          ShADadFf
+# ⚠️ OUTBOUND — WORKSTATION-04 downloading from attacker C2
+# orig_bytes=412 (HTTP GET request)
+# resp_bytes=438272 (~428KB = payload.exe download)
+# Port 8080 = non-standard HTTP port used by attacker's file server
+
+# --- SMB lateral movement to FILESERVER-01 ---
+1710379293.119       Cc3D4e5F6g7C   10.10.5.44       49821   10.10.2.30   445     tcp    smb      13.882    442368      8192        SF          ShADadFf
+# orig_bytes=442368 (~432KB = payload.exe being copied as svchost32.exe)
+# 10.10.2.30 = FILESERVER-01 internal IP
+
+# --- Cobalt Strike C2 beacon (from FILESERVER-01) ---
+1710379390.009       Cd4E5f6G7h8D   10.10.2.30       49901   185.220.101.47   4444   tcp    -      441.119   2048        1024        SF          ShADadFf
+# ⚠️ FILESERVER-01 beaconing to attacker on port 4444
+# Reverse shell / Cobalt Strike C2 channel established
+# Small consistent packet sizes = C2 keep-alive beaconing
+
+
+# ===================================================================
+# SECTION 2: SYSMON EVENTID 3 (Network Connection)
+# ===================================================================
+
+# --- PowerShell connecting to C2 for payload download ---
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:19:12 UTC
+Event ID:      3
+Computer:      WORKSTATION-04
+
+Network connection detected:
+  ProcessId:        3981
+  Image:            C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+  User:             CORP\jsmith
+  Protocol:         tcp
+  Initiated:        true
+  SourceIsIpv6:     false
+  SourceIp:         10.10.5.44
+  SourceHostname:   WORKSTATION-04.corp.local
+  SourcePort:       49312
+  DestinationIsIpv6: false
+  DestinationIp:    185.220.101.47
+  DestinationHostname: -
+  DestinationPort:  8080
+  # ⚠️ powershell.exe making outbound connection to external IP on port 8080
+  # Matches decoded -EncodedCommand: Invoke-WebRequest to attacker C2
+
+
+# --- Cobalt Strike beacon from FILESERVER-01 ---
+Log Name:      Microsoft-Windows-Sysmon/Operational
+Date:          2024-03-14 02:23:10 UTC
+Event ID:      3
+Computer:      FILESERVER-01
+
+Network connection detected:
+  ProcessId:        2841
+  Image:            C:\Windows\Temp\svchost32.exe
+  User:             CORP\jsmith
+  Protocol:         tcp
+  Initiated:        true
+  SourceIsIpv6:     false
+  SourceIp:         10.10.2.30
+  SourceHostname:   FILESERVER-01.corp.local
+  SourcePort:       49901
+  DestinationIsIpv6: false
+  DestinationIp:    185.220.101.47
+  DestinationHostname: -
+  DestinationPort:  4444
+  # ⚠️ svchost32.exe (Cobalt Strike) beaconing to 185.220.101.47:4444
+  # Port 4444 is a common default Cobalt Strike / Metasploit listener port
+
+
+# ===================================================================
+# SECTION 3: FIREWALL LOG (perimeter — inbound/outbound)
+# ===================================================================
+# Format: Date Time Action Protocol Src-IP Src-Port Dst-IP Dst-Port Bytes Direction
+
+2024-03-14 02:13:51  ALLOW  TCP  185.220.101.47  51204  10.10.5.44  445   1248   INBOUND
+2024-03-14 02:14:02  ALLOW  TCP  185.220.101.47  51205  10.10.5.44  445   1248   INBOUND
+2024-03-14 02:14:17  ALLOW  TCP  185.220.101.47  51206  10.10.5.44  445   1248   INBOUND
+# [... 20 additional ALLOW entries for failed brute force attempts ...]
+# ⚠️ Firewall is ALLOWING inbound SMB (port 445) from the internet — misconfiguration
+
+2024-03-14 02:17:43  ALLOW  TCP  185.220.101.47  51228  10.10.5.44  445   18432  INBOUND
+# ⚠️ Successful SMB session allowed inbound from external IP
+
+2024-03-14 02:19:12  ALLOW  TCP  10.10.5.44  49312  185.220.101.47  8080  438272  OUTBOUND
+# ⚠️ Outbound to attacker C2 — 428KB download (payload.exe)
+
+2024-03-14 02:23:10  ALLOW  TCP  10.10.2.30  49901  185.220.101.47  4444  2048    OUTBOUND
+# ⚠️ Cobalt Strike C2 beacon — FILESERVER-01 calling out to attacker
+
+2024-03-14 02:24:01  ALLOW  TCP  10.10.2.30  49902  185.220.101.47  4444  2048    OUTBOUND
+2024-03-14 02:25:01  ALLOW  TCP  10.10.2.30  49903  185.220.101.47  4444  2048    OUTBOUND
+2024-03-14 02:26:01  ALLOW  TCP  10.10.2.30  49904  185.220.101.47  4444  2048    OUTBOUND
+# ⚠️ Regular 60-second C2 beacon interval — Cobalt Strike default sleep timer
+
+
+# ===================================================================
+# SECTION 4: FULL TRAFFIC TIMELINE
+# ===================================================================
+
+Time (UTC)    Src IP           Src Port  Dst IP           Dst Port  Proto  Bytes    Direction  Description
+------------  ---------------  --------  ---------------  --------  -----  -------  ---------  ---------------------------------
+02:13:51      185.220.101.47   51204     10.10.5.44       445       TCP    1.2KB    INBOUND    SMB brute force attempt #1
+02:14:02      185.220.101.47   51205     10.10.5.44       445       TCP    1.2KB    INBOUND    SMB brute force attempt #2
+02:14:17      185.220.101.47   51206     10.10.5.44       445       TCP    1.2KB    INBOUND    SMB brute force attempt #3 (jsmith)
+[...]         185.220.101.47   51207-51227  10.10.5.44    445       TCP    1.2KB    INBOUND    SMB brute force attempts 4–23
+02:17:43      185.220.101.47   51228     10.10.5.44       445       TCP    90KB     INBOUND    ⚠️ SMB auth SUCCESS — session open
+02:19:12      10.10.5.44       49312     185.220.101.47   8080      TCP    428KB    OUTBOUND   ⚠️ payload.exe download from C2
+02:21:33      10.10.5.44       49821     10.10.2.30       445       TCP    432KB    INTERNAL   ⚠️ SMB copy to FILESERVER-01
+02:23:10      10.10.2.30       49901     185.220.101.47   4444      TCP    2KB      OUTBOUND   ⚠️ Cobalt Strike C2 beacon #1
+02:24:01      10.10.2.30       49902     185.220.101.47   4444      TCP    2KB      OUTBOUND   ⚠️ Cobalt Strike C2 beacon #2
+02:25:01      10.10.2.30       49903     185.220.101.47   4444      TCP    2KB      OUTBOUND   ⚠️ Cobalt Strike C2 beacon #3
+02:26:01      10.10.2.30       49904     185.220.101.47   4444      TCP    2KB      OUTBOUND   ⚠️ Cobalt Strike C2 beacon #4
+
+
+# ===================================================================
+# SECTION 5: TRAFFIC SUMMARY
+# ===================================================================
+
+Metric                                       Value
+-------------------------------------------  --------------------------------
+Total inbound connections from attacker IP   24  (23 failed + 1 successful)
+Total outbound connections to attacker IP    5   (1 download + 4 beacons)
+Total internal SMB connections               1   (WORKSTATION → FILESERVER)
+Payload download size                        ~428 KB  (payload.exe)
+Lateral movement transfer size               ~432 KB  (svchost32.exe copy)
+C2 beacon interval                           60 seconds
+C2 beacon payload size                       ~2 KB per beacon
+Attacker IP                                  185.220.101.47
+Ports used by attacker                       445 (inbound SMB), 8080 (C2 HTTP), 4444 (reverse shell)
+Affected internal hosts                      10.10.5.44 (WORKSTATION-04), 10.10.2.30 (FILESERVER-01)
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - Port 445 exposed to the internet is a critical firewall misconfiguration
+# - PowerShell making outbound connections is always a high-priority alert
+# - 60-second beacon interval matches Cobalt Strike default sleep setting
+# - Zeek conn_state SF = normal TCP teardown (not blocked or reset)
+# - Firewall ALLOW on all traffic = no egress filtering in place
+# - Recommend: Block SMB (445, 139) inbound at perimeter immediately
+# - Recommend: Block outbound on non-standard ports (8080, 4444) by default
+# - Recommend: Alert on internal hosts initiating connections to port 4444
+# -----------------------------------------------------------------------
