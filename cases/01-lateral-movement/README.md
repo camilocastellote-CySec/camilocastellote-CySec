@@ -16,7 +16,7 @@
 | **Date** | 2024-03-14 |
 | **Severity** | 🔴 High |
 | **Status** | Closed — Confirmed Incident |
-| **Analyst** | [Your Name] |
+| **Analyst** | Camilo Castellote |
 | **MITRE ATT&CK** | T1078, T1021.002, T1059.001, T1547.001 |
 
 ---
