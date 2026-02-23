@@ -29,10 +29,10 @@
 
 ## 📜 Certificates
 
+![CompTIA Security+](https://img.shields.io/badge/CompTIA-Security%2B-FF0000?style=for-the-badge&logo=comptia&logoColor=white)
 ![TryHackMe SAL1](https://img.shields.io/badge/TryHackMe-SOC_Level_1_Analyst-212C42?style=for-the-badge&logo=tryhackme&logoColor=white)
 ![Google Coursera](https://img.shields.io/badge/Coursera-Bits_and_Bytes_of_Computer_Networking-0056D2?style=for-the-badge&logo=coursera&logoColor=white)
 ![Google Coursera](https://img.shields.io/badge/Coursera-Technical_Support_Fundamentals-0056D2?style=for-the-badge&logo=coursera&logoColor=white)
-![CompTIA Security+](https://img.shields.io/badge/CompTIA-Security%2B-FF0000?style=for-the-badge&logo=comptia&logoColor=white)
 
 ---
 
