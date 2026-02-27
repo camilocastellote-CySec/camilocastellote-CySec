@@ -1,6 +1,6 @@
 # Query Validation Notes
 
----
+
 
 ##  Environment Assumptions
 
