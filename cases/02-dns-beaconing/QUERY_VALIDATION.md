@@ -1,8 +1,8 @@
----
+# Query Validation Notes
 
-## Query Validation Notes
 
-### Environment Assumptions
+
+## Environment Assumptions
 
 **SIEM Platform:** Splunk Enterprise Security  
 **Data Sources:**
@@ -19,9 +19,9 @@
 | `ParentImage` | Parent process | `process.parent.name`, `ParentProcessName` |
 | `ProcessId` | Process ID | `PID`, `process.pid`, `process_id` |
 
----
 
-### Query 1: DNS Query Volume Detection (Sysmon EventID 22)
+
+## Query 1: DNS Query Volume Detection (Sysmon EventID 22)
 
 **Query:**
 ```spl
@@ -34,25 +34,25 @@ QueryName="*updates-cdn77.com"
 **Validation Steps:**
 
 1. **Verify Sysmon DNS logging is enabled:**
-```spl
+   ```spl
    index=sysmon EventCode=22
    | stats count by host
-```
+   ```
    **Expected:** ACCOUNTING-PC-09 appears in results
 
 2. **Check QueryName field format:**
-```spl
+   ```spl
    index=sysmon EventCode=22
    | table *
    | head 1
-```
+   ```
    Look for: `QueryName`, `query`, `dns.question.name`
 
 3. **Test wildcard matching:**
-```spl
+   ```spl
    index=sysmon EventCode=22 QueryName="*updates-cdn77.com"
    | stats count
-```
+   ```
    **Expected:** 847 total queries (from case timeline)
 
 **Common Issues & Fixes:**
@@ -72,55 +72,11 @@ index=sysmon EventCode=22 Computer=ACCOUNTING-PC-09
 | sort - count
 ```
 
----
 
-### Query 2: Process Creating DNS Queries
+
+## Query 2: Process Creating DNS Queries
 
 **Query:**
-```spl
-index=sysmon host=ACCOUNTING-PC-09 EventCode=3
-earliest="2024-04-02T09:40:00" latest="2024-04-02T11:00:00"
-| table _time, Image, QueryName, Protocol, Initiated
-| sort _time
-```
-
-**Validation Steps:**
-
-1. **Verify EventID 3 captures DNS:**
-```spl
-   index=sysmon EventCode=3 dest_port=53
-   | stats count by Image
-```
-   **Expected:** Various processes making DNS queries
-
-2. **Check if DNS queries are in EventID 3 or EventID 22:**
-   - EventID 3 = Network connection (includes DNS as port 53)
-   - EventID 22 = DNS query (dedicated event, more detail)
-   
-   **Note:** The case uses EventID 22, not EventID 3. Correct query:
-```spl
-   index=sysmon host=ACCOUNTING-PC-09 EventCode=22
-   earliest="2024-04-02T09:40:00" latest="2024-04-02T11:00:00"
-   | table _time, Image, ProcessId, QueryName, QueryStatus
-   | sort _time
-```
-
-3. **Test for specific process:**
-```spl
-   index=sysmon EventCode=22 Image="*svcupdate.exe"
-   QueryName="*updates-cdn77.com"
-```
-   **Expected:** All 847 queries should be from this single process
-
-**Common Issues & Fixes:**
-
-| Issue | Fix |
-|---|---|
-| EventID 3 doesn't show DNS details | Use EventID 22 instead |
-| QueryName field in EventID 3 | Only available in EventID 22 |
-| Image shows full path | Use wildcards: `Image="*\\svcupdate.exe"` |
-
-**Corrected Query:**
 ```spl
 index=sysmon host=ACCOUNTING-PC-09 EventCode=22
 earliest="2024-04-02T09:40:00" latest="2024-04-02T11:00:00"
@@ -129,9 +85,50 @@ QueryName="*updates-cdn77.com"
 | sort _time
 ```
 
----
+**Validation Steps:**
 
-### Query 3: Process Tree Analysis (Parent Process)
+1. **Verify EventID 22 captures DNS with process info:**
+   ```spl
+   index=sysmon EventCode=22
+   | stats count by Image
+   ```
+   **Expected:** Various processes making DNS queries
+
+2. **Check if DNS queries include process details:**
+   ```spl
+   index=sysmon EventCode=22
+   | table Image, ProcessId, QueryName
+   | head 5
+   ```
+   **Expected:** All three fields populated
+
+3. **Test for specific process:**
+   ```spl
+   index=sysmon EventCode=22 Image="*svcupdate.exe"
+   QueryName="*updates-cdn77.com"
+   ```
+   **Expected:** All 847 queries should be from this single process
+
+**Common Issues & Fixes:**
+
+| Issue | Fix |
+|---|---|
+| Image shows full path | Use wildcards: `Image="*\\svcupdate.exe"` |
+| QueryName field missing | Check if using EventID 3 instead (network connection) |
+| ProcessId format differs | May be hex or decimal, verify format |
+
+**Alternative Query:**
+```spl
+index=sysmon host=ACCOUNTING-PC-09 EventCode=22
+earliest="2024-04-02T09:40:00" latest="2024-04-02T11:00:00"
+| search QueryName="*updates-cdn77.com"
+| table _time, Image, ProcessId, QueryName, QueryStatus
+| sort _time
+```
+
+
+
+## Query 3: Process Tree Analysis (Parent Process)
 
 **Query:**
 ```spl
@@ -142,26 +139,26 @@ index=sysmon EventCode=1 ProcessId=4821
 **Validation Steps:**
 
 1. **Verify PID field format:**
-```spl
+   ```spl
    index=sysmon EventCode=1
    | table ProcessId, ProcessGuid
    | head 5
-```
+   ```
    **Expected:** ProcessId is numeric (4821), ProcessGuid is GUID format
 
 2. **Check if PID is unique across time:**
    - PIDs can be reused by Windows
    - Add time filter to ensure correct process:
-```spl
+   ```spl
    index=sysmon EventCode=1 ProcessId=4821
    earliest="2024-04-02T09:43:00" latest="2024-04-02T09:44:00"
-```
+   ```
 
 3. **Test parent-child relationship:**
-```spl
+   ```spl
    index=sysmon EventCode=1 Image="*svcupdate.exe"
    | table _time, ParentImage, Image, User
-```
+   ```
    **Expected:** ParentImage should be `*powershell.exe`
 
 **Common Issues & Fixes:**
@@ -179,9 +176,9 @@ ProcessGuid="{4A3B2C1D-E5F6-7890-ABCD-EF1234567890}"
 | table _time, ParentImage, ParentCommandLine, ParentProcessGuid, Image, CommandLine, ProcessGuid
 ```
 
----
 
-### Zeek DNS Log Analysis
+
+## Zeek DNS Log Analysis
 
 **Query (bash):**
 ```bash
@@ -193,9 +190,9 @@ cat dns.log | zeek-cut ts id.orig_h query qtype_name answers
 **Validation Steps:**
 
 1. **Check Zeek log format version:**
-```bash
+   ```bash
    head -10 dns.log | grep "^#"
-```
+   ```
    **Expected:** Shows field names like `ts`, `id.orig_h`, `query`, etc.
 
 2. **Verify field names match Zeek version:**
@@ -203,9 +200,9 @@ cat dns.log | zeek-cut ts id.orig_h query qtype_name answers
    - Zeek 4.x+: May use different field names
 
 3. **Test field extraction:**
-```bash
+   ```bash
    zeek-cut -h | grep query
-```
+   ```
    **Expected:** Shows `query` is available field
 
 **Common Issues & Fixes:**
@@ -221,9 +218,9 @@ cat dns.log | zeek-cut ts id.orig_h query qtype_name answers
 awk -F'\t' '($3 == "10.10.8.15" || $5 == "10.10.8.15") && $10 ~ /updates-cdn77\.com/ {print $1, $3, $10, $16}' dns.log
 ```
 
----
 
-### Query 4: Interval Analysis (Beacon Detection)
+
+## Query 4: Interval Analysis (Beacon Detection)
 
 **Query (bash):**
 ```bash
@@ -237,28 +234,28 @@ cat dns.log | zeek-cut ts query
 **Validation Steps:**
 
 1. **Test timestamp extraction:**
-```bash
+   ```bash
    cat dns.log | zeek-cut ts | head -5
-```
+   ```
    **Expected:** Unix timestamps like `1712047380.112`
 
 2. **Verify awk math:**
-```bash
+   ```bash
    echo -e "1712047380.112\n1712047386.118" | awk 'NR>1{print $1-prev} {prev=$1}'
-```
+   ```
    **Expected:** `6.006` (6-second interval)
 
 3. **Check sorting logic:**
-```bash
+   ```bash
    # Should show most common interval first
    echo -e "6.00\n6.00\n6.01\n5.99" | sort | uniq -c | sort -rn
-```
+   ```
    **Expected:** 
-```
+   ```
    2 6.00
    1 6.01
    1 5.99
-```
+   ```
 
 **Common Issues & Fixes:**
 
@@ -268,9 +265,9 @@ cat dns.log | zeek-cut ts query
 | Precision issues in intervals | Use `printf "%.3f"` for more decimal places |
 | Large dataset performance | Filter to specific host first: `grep "10.10.8.15"` before processing |
 
----
 
-### Entropy Calculation (Python)
+
+## Entropy Calculation (Python)
 
 **Script:**
 ```python
@@ -285,7 +282,7 @@ print(f"Entropy: {entropy:.2f}")
 **Validation Steps:**
 
 1. **Test with known values:**
-```python
+   ```python
    # Low entropy (repeated characters)
    test1 = "aaaaaa"  # Expected: ~0.0
    
@@ -293,7 +290,7 @@ print(f"Entropy: {entropy:.2f}")
    test2 = "a7f3k2"  # Expected: ~2.58
    
    # Calculate both and compare
-```
+   ```
 
 2. **Verify math:**
    - "aaaaaa" → 1 unique char → entropy = 0
@@ -311,9 +308,11 @@ print(f"Entropy: {entropy:.2f}")
 | Negative entropy | Ensure using absolute values in log |
 | Different entropy values | Check if using log2 vs log10 vs ln |
 
----
 
-### Verification Checklist
+
+## Verification Checklist
+
+Before using these queries in a real environment:
 
 - [ ] Confirmed Sysmon EventID 22 (DNS query) is logged
 - [ ] Tested Zeek dns.log field names match version
@@ -322,24 +321,31 @@ print(f"Entropy: {entropy:.2f}")
 - [ ] Validated entropy calculation with known values
 - [ ] Tested interval analysis on sample data
 
----
 
-### Testing in Real Environment
 
-**Option 1: TryHackMe**
-- Room: "Investigating with Splunk" or "DNS Tunneling"
-- Pre-configured logs with DNS beaconing patterns
+## Additional Resources
 
-**Option 2: Generate Test Traffic**
-```bash
-# Simulate DNS beaconing (for lab use only)
-while true; do
-  dig $(head /dev/urandom | tr -dc a-z0-9 | head -c 6).test-domain.com
-  sleep 6
-done
-```
+**To validate in a test environment:**
 
-**Option 3: Public Datasets**
-- Malware Traffic Analysis: https://malware-traffic-analysis.net
-- Download PCAP with DNS tunneling
-- Extract dns.log with Zeek
+1. **Use TryHackMe:**
+   - Room: "Investigating with Splunk" or "DNS Tunneling"
+   - Pre-configured logs with DNS beaconing patterns
+
+2. **Generate Test Traffic:**
+   ```bash
+   # Simulate DNS beaconing (for lab use only)
+   while true; do
+     dig $(head /dev/urandom | tr -dc a-z0-9 | head -c 6).test-domain.com
+     sleep 6
+   done
+   ```
+
+3. **Public Datasets:**
+   - Malware Traffic Analysis: https://malware-traffic-analysis.net
+   - Download PCAP with DNS tunneling
+   - Extract dns.log with Zeek
+
+**Query troubleshooting guide:**
+- If 0 results → Check Sysmon config has EventID 22 enabled
+- If field missing → Verify Sysmon version supports DNS logging
+- If wildcard fails → Try `search` command instead of field filter
