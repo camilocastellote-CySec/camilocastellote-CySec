@@ -2,7 +2,7 @@
 
 ---
 
-## 🔍 Environment Assumptions
+##  Environment Assumptions
 
 **SIEM Platform:** Splunk Enterprise Security  
 **Data Sources:**
