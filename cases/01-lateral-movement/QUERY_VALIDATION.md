@@ -1,4 +1,4 @@
-# Query Validation Notes — Case 01: Lateral Movement
+# Query Validation Notes
 
 ---
 
