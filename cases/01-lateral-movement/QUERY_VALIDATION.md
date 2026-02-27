@@ -279,25 +279,6 @@ Before using these queries in a real environment:
 - [ ] Confirmed EventID formats (numeric vs string)
 - [ ] Tested on a non-production Splunk instance first
 
----
-
-## Additional Resources
-
-**To validate in a test environment:**
-
-1. **Use Boss of the SOC datasets:**
-   - Download: https://github.com/splunk/botsv3
-   - Contains realistic Windows Security + Sysmon logs
-   - Test queries against known attack patterns
-
-2. **TryHackMe Splunk Labs:**
-   - "Investigating with Splunk" room
-   - Pre-configured Splunk instance
-   - Validate query syntax and logic
-
-3. **Build home lab:**
-   - Install Splunk Free (developer license)
-   - Configure Sysmon on Windows VM
    - Generate test traffic and ingest logs
 
 **Query troubleshooting guide:**
