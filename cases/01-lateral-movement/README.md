@@ -7,7 +7,6 @@
 
 ---
 
-# Case 01: Lateral Movement via Compromised Credentials
 
 > **⚠️ Educational Scenario**  
 > This is a **fictional case study** created for portfolio demonstration purposes. While the investigation methodology, tools, and techniques are based on real-world SOC operations, the IP addresses, file hashes, hostnames, and log samples are synthetic. The IOCs will not return results in threat intelligence platforms (VirusTotal, AbuseIPDB, etc.) as they are not from actual malware campaigns.
