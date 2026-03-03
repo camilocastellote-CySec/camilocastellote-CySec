@@ -4,9 +4,6 @@
 # Window: 2024-05-21 14:20:00 UTC to 2024-05-21 15:00:00 UTC
 # Format: %h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"
 # -----------------------------------------------------------------------
-# NOTE: Real IPs replaced with RFC 5737 documentation ranges.
-#       Sensitive paths preserved for analysis value.
-# -----------------------------------------------------------------------
 
 
 # === SECTION 1: ATTACKER RECONNAISSANCE (pre-upload) ===
