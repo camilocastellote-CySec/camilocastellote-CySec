@@ -3,10 +3,6 @@
 # Sources: Firewall logs + Zeek conn.log + Sysmon EventID 3 (Network Connection)
 # Window: 2024-03-14 02:13:51 UTC to 2024-03-14 02:30:00 UTC
 # -----------------------------------------------------------------------
-# NOTE: Internal IPs anonymized to RFC 1918 ranges.
-#       External IPs preserved — critical for IOC documentation.
-#       Bytes values are approximate.
-# -----------------------------------------------------------------------
 
 
 # ===================================================================
