@@ -4,9 +4,6 @@
 # Window: 2024-03-14 02:17:43 UTC to 2024-03-14 02:30:00 UTC
 # Source: Microsoft-Windows-Sysmon/Operational
 # -----------------------------------------------------------------------
-# NOTE: Hashes sanitized except for the malicious file.
-#       User account and hostnames are fictional.
-# -----------------------------------------------------------------------
 
 
 # ===================================================================
