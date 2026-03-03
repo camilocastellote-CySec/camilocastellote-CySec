@@ -149,7 +149,6 @@ Malware persistence mechanism       None detected in process logs
 # - Word spawning cmd.exe is a high-confidence indicator of macro execution
 # - -WindowStyle Hidden + -ExecutionPolicy Bypass = standard dropper flags
 # - Encoded PowerShell should always be decoded and reviewed
-# - svcupdate.exe hashes match DNScat2 client on VirusTotal (61/72 engines)
 # - No persistence on ACCOUNTING-PC-09 — malware lives only in running session
 # - Killing svcupdate.exe (PID 4821) and isolating host stops the beaconing
 # -----------------------------------------------------------------------
