@@ -1,7 +1,13 @@
 # 🔐 SOC Analyst Portfolio
 
-> Documenting hands-on SOC investigations based on realistic attack scenarios
-> using Windows, Linux, network traffic, web logs, SIEM data, and threat intelligence.
+This portfolio contains **three fictional but realistic incident investigations** demonstrating my SOC analyst capabilities:
+
+- **Investigation methodology** - Real SOC workflows
+- **Tools and queries** - Actual Splunk/Elastic syntax
+- **MITRE ATT&CK mapping** - Correct technique classification
+- **IOCs and log samples** - Synthetic data for educational purposes
+
+**Note:** IOCs (IP addresses, file hashes) are fictional and will not return results in threat intelligence platforms. This is intentional to avoid legal/ethical issues with distributing real malware indicators. The value of this portfolio lies in demonstrating **investigation process, analytical thinking, and technical documentation skills** rather than real threat data.
 
 ---
 
