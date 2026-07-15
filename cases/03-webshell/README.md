@@ -12,20 +12,20 @@
 >
 > **What IS real:** Investigation methodology, SIEM query logic, MITRE ATT&CK mappings, incident response procedures.
 
-## 📋 Case Summary
+## Case Summary
 
 | Field | Details |
 |---|---|
 | **Case ID** | SOC-2024-003 |
 | **Date** | 2024-05-21 |
-| **Severity** | 🔴 Critical |
+| **Severity** | Critical |
 | **Status** | Closed — Confirmed Incident |
 | **Analyst** | Camilo Castellote |
 | **MITRE ATT&CK** | T1190, T1505.003, T1059.004, T1033, T1083 |
 
 ---
 
-## 🚨 Alert Triggered
+## Alert Triggered
 
 > **SIEM Rule:** Web server executing OS commands via child process  
 > **Source:** Elastic — auditd + Apache access logs  
@@ -42,7 +42,7 @@ Source IP: 203.0.113.88
 
 ---
 
-## 🔍 Investigation Process
+## Investigation Process
 
 ### Step 1 — Alert Triage & Validation
 
@@ -326,7 +326,7 @@ Vulnerability: The upload.php script validated only the MIME type
 
 ---
 
-## 🔴 Findings & Impact
+## Findings & Impact
 
 | Category | Finding |
 |---|---|
@@ -341,7 +341,7 @@ Vulnerability: The upload.php script validated only the MIME type
 
 ---
 
-## 🛡️ Containment & Recommendations
+## Containment & Recommendations
 
 - [x] Isolated WEB-SERVER-01 from network immediately
 - [x] Removed `thumb_resize.php` and `lp.sh`
@@ -358,7 +358,7 @@ Vulnerability: The upload.php script validated only the MIME type
 
 ---
 
-## 📎 Evidence Files
+## Evidence Files
 
 | File | Description |
 |---|---|
@@ -370,7 +370,7 @@ Vulnerability: The upload.php script validated only the MIME type
 
 ---
 
-## 🗂️ MITRE ATT&CK Mapping
+## MITRE ATT&CK Mapping
 
 | Tactic | Technique | ID |
 |---|---|---|
