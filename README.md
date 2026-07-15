@@ -1,4 +1,4 @@
-# 🔐 SOC Analyst Portfolio
+# SOC Analyst Portfolio
 
 This portfolio contains **three fictional but realistic incident investigations** demonstrating my SOC analyst capabilities:
 
@@ -11,7 +11,7 @@ This portfolio contains **three fictional but realistic incident investigations*
 
 ---
 
-## 🛠️ Tools Used
+## Tools Used
 
 ### SIEM
 ![Splunk](https://img.shields.io/badge/Splunk-000000?style=for-the-badge&logo=splunk&logoColor=white)
@@ -33,7 +33,7 @@ This portfolio contains **three fictional but realistic incident investigations*
 
 ---
 
-## 📜 Certificates
+## Certificates
 
 ![CompTIA Security+](https://img.shields.io/badge/CompTIA-Security%2B-FF0000?style=for-the-badge&logo=comptia&logoColor=white)
 ![TryHackMe SAL1](https://img.shields.io/badge/TryHackMe-SOC_Level_1_Analyst-212C42?style=for-the-badge&logo=tryhackme&logoColor=white)
@@ -42,7 +42,7 @@ This portfolio contains **three fictional but realistic incident investigations*
 
 ---
 
-## 💡 Skills Demonstrated
+## Skills Demonstrated
 
 | Category | Skills |
 |---|---|
@@ -54,7 +54,7 @@ This portfolio contains **three fictional but realistic incident investigations*
 
 ---
 
-## 🔍 Investigation Methodology
+## Investigation Methodology
 ```
 [Alert Triggered]
       ↓
@@ -73,7 +73,7 @@ This portfolio contains **three fictional but realistic incident investigations*
 
 ---
 
-## 📁 Projects
+## Projects
 
 | # | Case | Type | Tools | Write-up |
 |---|---|---|---|---|
