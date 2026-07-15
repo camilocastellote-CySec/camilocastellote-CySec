@@ -12,20 +12,20 @@
 >
 > **What IS real:** Investigation methodology, SIEM query logic, MITRE ATT&CK mappings, incident response procedures.
 
-## 📋 Case Summary
+## Case Summary
 
 | Field | Details |
 |---|---|
 | **Case ID** | SOC-2024-002 |
 | **Date** | 2024-04-02 |
-| **Severity** | 🔴 High |
+| **Severity** | High |
 | **Status** | Closed — Confirmed Incident |
 | **Analyst** | Camilo Castellote |
 | **MITRE ATT&CK** | T1071.004, T1041, T1568.002, T1027 |
 
 ---
 
-## 🚨 Alert Triggered
+## Alert Triggered
 
 > **SIEM Rule:** Unusual DNS query volume from single internal host  
 > **Source:** Zeek DNS logs — dns.log  
@@ -42,7 +42,7 @@ Query pattern: Randomized subdomains, consistent parent domain
 
 ---
 
-## 🔍 Investigation Process
+## Investigation Process
 
 ### Step 1 — Alert Triage & Validation
 
@@ -291,7 +291,7 @@ echo "aXBjb25maWc=" | base64 -d
 
 ---
 
-## 🔴 Findings & Impact
+## Findings & Impact
 
 | Category | Finding |
 |---|---|
@@ -306,7 +306,7 @@ echo "aXBjb25maWc=" | base64 -d
 
 ---
 
-## 🛡️ Containment & Recommendations
+## Containment & Recommendations
 
 - [x] Isolated ACCOUNTING-PC-09 from network
 - [x] Blocked `updates-cdn77.com` and `94.102.49.190` at DNS/firewall
@@ -320,7 +320,7 @@ echo "aXBjb25maWc=" | base64 -d
 
 ---
 
-## 📎 Evidence Files
+## Evidence Files
 
 | File | Description |
 |---|---|
@@ -331,7 +331,7 @@ echo "aXBjb25maWc=" | base64 -d
 
 ---
 
-## 🗂️ MITRE ATT&CK Mapping
+## MITRE ATT&CK Mapping
 
 | Tactic | Technique | ID |
 |---|---|---|
