@@ -19,7 +19,7 @@
 |---|---|
 | **Case ID** | SOC-2024-001 |
 | **Date** | 2024-03-14 |
-| **Severity** | 🔴 High |
+| **Severity** | High |
 | **Status** | Closed — Confirmed Incident |
 | **Analyst** | Camilo Castellote |
 | **MITRE ATT&CK** | T1078, T1021.002, T1059.001, T1547.001 |
