@@ -13,7 +13,7 @@
 >
 > **What IS real:** Investigation methodology, SIEM query logic, MITRE ATT&CK mappings, incident response procedures.
 
-## 📋 Case Summary
+## Case Summary
 
 | Field | Details |
 |---|---|
@@ -26,7 +26,7 @@
 
 ---
 
-## 🚨 Alert Triggered
+## Alert Triggered
 
 > **SIEM Rule:** Multiple failed logins followed by successful authentication from unusual IP  
 > **Source:** Splunk — Windows Security Event Log  
@@ -43,7 +43,7 @@ Outcome: SUCCESS (EventID 4624)
 
 ---
 
-## 🔍 Investigation Process
+## Investigation Process
 
 ### Step 1 — Alert Triage & Validation
 
@@ -210,7 +210,7 @@ Time:         2024-03-14 02:24:17 UTC
 
 ---
 
-## 🔴 Findings & Impact
+## Findings & Impact
 
 | Category | Finding |
 |---|---|
@@ -224,7 +224,7 @@ Time:         2024-03-14 02:24:17 UTC
 
 ---
 
-## 🛡️ Containment & Recommendations
+## Containment & Recommendations
 
 - [x] Blocked `185.220.101.47` at perimeter firewall
 - [x] Disabled `jsmith` account pending password reset + MFA enrollment
@@ -237,7 +237,7 @@ Time:         2024-03-14 02:24:17 UTC
 
 ---
 
-## 📎 Evidence Files
+## Evidence Files
 
 | File | Description |
 |---|---|
@@ -248,7 +248,7 @@ Time:         2024-03-14 02:24:17 UTC
 
 ---
 
-## 🗂️ MITRE ATT&CK Mapping
+## MITRE ATT&CK Mapping
 
 | Tactic | Technique | ID |
 |---|---|---|
